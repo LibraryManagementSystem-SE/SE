@@ -1,7 +1,7 @@
 package com.library.common;
 
 /**
- * Base exception for all library-related exceptions.
+ * base exception for all library-related exceptions.
  */
 public class LibraryException extends RuntimeException {
   public LibraryException(String message) {

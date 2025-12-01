@@ -42,9 +42,7 @@ public class User {
     return role;
   }
 
-  // For this assignment-level project we expose the raw password so that
-  // simple file-based persistence can store it. In a real system, you would
-  // never expose or store raw passwords like this.
+
   public String getPassword() {
     return password;
   }

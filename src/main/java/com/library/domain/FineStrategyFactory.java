@@ -29,9 +29,9 @@ public class FineStrategyFactory {
     BigDecimal calculateFine(long overdueDays);
   }
 
-  
+  	/**
     //Flat rate fine for overdue books: 10 NIS per day.
-
+	**/
   private static class BookStrategy implements Strategy {
     private static final BigDecimal DAILY_RATE = BigDecimal.TEN;
 
@@ -44,9 +44,9 @@ public class FineStrategyFactory {
     }
   }
 
-
+  /**
    // Higher daily fine for CDs: 20 NIS per day.
-
+**/
   private static class CDStrategy implements Strategy {
     private static final BigDecimal DAILY_RATE = BigDecimal.valueOf(20);
 

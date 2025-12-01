@@ -2,9 +2,7 @@ package com.library.domain;
 //sally
 import java.util.Objects;
 
-/**
- * Book media representation.
- */
+
 public class Book extends Media {
   private final String author;
   private final String isbn;
