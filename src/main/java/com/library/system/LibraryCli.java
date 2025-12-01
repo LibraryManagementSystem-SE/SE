@@ -90,7 +90,8 @@ public class LibraryCli {
 
   private void showAdminMenu() {
     User currentUser = authService.getCurrentUser().orElseThrow();
-    System.out.printf("\nWelcome %s (Admin)\n", currentUser.getName());
+    System.out.println("\n=== Library Management System ===");
+    System.out.printf("Welcome, %s (Admin)\n\n", currentUser.getName());
     System.out.println("1. Add book");
     System.out.println("2. Add CD");
     System.out.println("3. Send reminders");
