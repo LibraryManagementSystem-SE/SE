@@ -10,9 +10,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Service for admin-specific operations.
- */
+	//talabracnh
+ // Service for admin-specific operations.
+ 
 public class AdminService {
     private final UserRepository userRepository;
     private final AuthService authService;
