@@ -56,85 +56,102 @@ public class LibraryCli {
   }
 
   private void showMenu() {
-    System.out.println();
-    System.out.println("Choose an option:");
+    System.out.println("\n=== Library Management System ===");
+    Optional<User> currentUser = authService.getCurrentUser();
+    
+    if (currentUser.isEmpty()) {
+      showInitialMenu();
+    } else if (currentUser.get().isAdmin()) {
+      showAdminMenu();
+    } else {
+      showMemberMenu();
+    }
+  }
+
+  private void showInitialMenu() {
+    System.out.println("\n=== Library Management System ===");
     System.out.println("1. Login");
-    System.out.println("2. Logout");
-    System.out.println("3. Register member");
-    System.out.println("4. Add book (admin)");
-    System.out.println("5. Add CD (admin)");
-    System.out.println("6. Search media");
-    System.out.println("7. Borrow media");
-    System.out.println("8. Return media");
-    System.out.println("9. Pay fine");
-    System.out.println("10. Send reminders (admin)");
-    System.out.println("11. Unregister user (admin)");
-    System.out.println("12. Show overdue report");
-    System.out.println("13. List all users (admin)");
+    System.out.println("2. Register member");
+    System.out.println("3. Search media");
     System.out.println("0. Exit");
     System.out.print("> ");
   }
 
+  private void showMemberMenu() {
+    User currentUser = authService.getCurrentUser().orElseThrow();
+    System.out.printf("\nWelcome %s (Member)\n", currentUser.getName());
+    System.out.println("1. Borrow media");
+    System.out.println("2. Return media");
+    System.out.println("3. Pay fine");
+    System.out.println("4. Search media");
+    System.out.println("0. Logout");
+    System.out.print("> ");
+  }
+
+  private void showAdminMenu() {
+    User currentUser = authService.getCurrentUser().orElseThrow();
+    System.out.printf("\nWelcome %s (Admin)\n", currentUser.getName());
+    System.out.println("1. Add book");
+    System.out.println("2. Add CD");
+    System.out.println("3. Send reminders");
+    System.out.println("4. Show overdue report");
+    System.out.println("5. List all users");
+    System.out.println("6. Unregister user");
+    System.out.println("0. Logout");
+    System.out.print("> ");
+  }
+
   private boolean handleChoice(String choice) {
+    Optional<User> currentUser = authService.getCurrentUser();
+    
+    if (currentUser.isEmpty()) {
+      return handleInitialMenuChoice(choice);
+    } else if (currentUser.get().isAdmin()) {
+      return handleAdminMenuChoice(choice);
+    } else {
+      return handleMemberMenuChoice(choice);
+    }
+  }
+
+  private boolean handleInitialMenuChoice(String choice) {
     return switch (choice) {
-      case "1" -> {
-        login();
-        yield true;
-      }
-      case "2" -> {
+      case "1" -> { login(); yield true; }
+      case "2" -> { registerMember(); yield true; }
+      case "3" -> { search(); yield true; }
+      case "0" -> { System.out.println("Goodbye!"); yield false; }
+      default -> { System.out.println("Invalid option, please try again"); yield true; }
+    };
+  }
+
+  private boolean handleMemberMenuChoice(String choice) {
+    return switch (choice) {
+      case "1" -> { borrow(); yield true; }
+      case "2" -> { returnMedia(); yield true; }
+      case "3" -> { payFine(); yield true; }
+      case "4" -> { search(); yield true; }
+      case "0" -> { 
         authService.logout();
-        System.out.println("Logged out.");
-        yield true;
+        System.out.println("Successfully logged out");
+        yield true; 
       }
-      case "3" -> {
-        registerMember();
-        yield true;
+      default -> { System.out.println("خيار غير صالح، الرجاء المحاولة مرة أخرى"); yield true; }
+    };
+  }
+
+  private boolean handleAdminMenuChoice(String choice) {
+    return switch (choice) {
+      case "1" -> { addBook(); yield true; }
+      case "2" -> { addCd(); yield true; }
+      case "3" -> { sendReminders(); yield true; }
+      case "4" -> { showOverdueReport(); yield true; }
+      case "5" -> { listAllUsers(); yield true; }
+      case "6" -> { unregister(); yield true; }
+      case "0" -> { 
+        authService.logout();
+        System.out.println("Successfully logged out");
+        yield true; 
       }
-      case "4" -> {
-        addBook();
-        yield true;
-      }
-      case "5" -> {
-        addCd();
-        yield true;
-      }
-      case "6" -> {
-        search();
-        yield true;
-      }
-      case "7" -> {
-        borrow();
-        yield true;
-      }
-      case "8" -> {
-        returnMedia();
-        yield true;
-      }
-      case "9" -> {
-        payFine();
-        yield true;
-      }
-      case "10" -> {
-        sendReminders();
-        yield true;
-      }
-      case "11" -> {
-        unregister();
-        yield true;
-      }
-      case "12" -> {
-        showOverdueReport();
-        yield true;
-      }
-      case "13" -> {
-        listAllUsers();
-        yield true;
-      }
-      case "0" -> false;
-      default -> {
-        System.out.println("Unknown option.");
-        yield true;
-      }
+      default -> { System.out.println("خيار غير صالح، الرجاء المحاولة مرة أخرى"); yield true; }
     };
   }
 
