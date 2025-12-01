@@ -45,6 +45,17 @@ public class FineService {
         userRepository
             .findById(userId)
             .orElseThrow(() -> new LibraryException("User not found: " + userId));
+
+    if (!user.hasOutstandingFines()) {
+      throw new LibraryException("No outstanding fines to pay");
+    }
+
+    BigDecimal currentBalance = user.getFineBalance();
+    if (amount.compareTo(currentBalance) > 0) {
+      throw new LibraryException(
+          "Payment exceeds outstanding fine of " + currentBalance);
+    }
+
     user.payFine(amount);
     return user.getFineBalance();
   }

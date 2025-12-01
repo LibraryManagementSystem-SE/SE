@@ -1,13 +1,15 @@
 package com.library.system;
 
+import com.library.domain.Book;
+import com.library.domain.CD;
 import com.library.domain.FineStrategyFactory;
 import com.library.notification.EmailNotifier;
 import com.library.repository.LoanRepository;
 import com.library.repository.MediaRepository;
 import com.library.repository.UserRepository;
+import com.library.repository.file.FileMediaRepository;
+import com.library.repository.file.FileUserRepository;
 import com.library.repository.memory.InMemoryLoanRepository;
-import com.library.repository.memory.InMemoryMediaRepository;
-import com.library.repository.memory.InMemoryUserRepository;
 import com.library.service.AuthService;
 import com.library.service.BorrowService;
 import com.library.service.CatalogService;
@@ -46,11 +48,23 @@ public class LibraryEnvironment {
   }
 
   public static LibraryEnvironment bootstrap() {
-    UserRepository userRepository = new InMemoryUserRepository();
-    MediaRepository mediaRepository = new InMemoryMediaRepository();
+    // Use file-based repositories for users and media so data is kept between runs.
+    UserRepository userRepository = new FileUserRepository();
+    MediaRepository mediaRepository = new FileMediaRepository();
     LoanRepository loanRepository = new InMemoryLoanRepository();
     DateProvider dateProvider = new DateProvider.System();
     FineStrategyFactory fineStrategyFactory = new FineStrategyFactory();
+
+    // Seed some demo books and CDs into the media repository if it's empty so that
+    // the files are populated and the catalog is not empty on first run.
+    if (mediaRepository.findAll().isEmpty()) {
+      mediaRepository.save(
+          new Book("B1", "Clean Code", "Robert C. Martin", "9780132350884"));
+      mediaRepository.save(
+          new Book("B2", "Effective Java", "Joshua Bloch", "9780134685991"));
+      mediaRepository.save(new CD("C1", "Thriller", "Michael Jackson"));
+      mediaRepository.save(new CD("C2", "Back in Black", "AC/DC"));
+    }
 
     AuthService authService = new AuthService(userRepository);
     BorrowService borrowService =
