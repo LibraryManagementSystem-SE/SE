@@ -2,9 +2,7 @@ package com.library.domain;
 
 import java.util.Objects;
 
-/**
- * CD media representation.
- */
+
 public class CD extends Media {
   private final String artist;
 

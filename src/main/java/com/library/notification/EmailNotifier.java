@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
+/**
  // Simple email notifier that records sent messages for verification.
-
+**/
 public class EmailNotifier implements ReminderObserver {
   private final List<String> sentMessages = new ArrayList<>();
 

@@ -1,0 +1,41 @@
+B1;To Kill a Mockingbird;Harper Lee;9780061120084
+B2;1984;George Orwell;9780451524935
+B3;The Great Gatsby;F. Scott Fitzgerald;9780743273565
+B4;Pride and Prejudice;Jane Austen;9781503290563
+B5;The Catcher in the Rye;J.D. Salinger;9780316769488
+B6;Harry Potter and the Sorcerer's Stone;J.K. Rowling;9780590353427
+B7;The Hobbit;J.R.R. Tolkien;9780547928227
+B8;The Lord of the Rings;J.R.R. Tolkien;9780618640157
+B9;The Alchemist;Paulo Coelho;9780061122415
+B10;The Da Vinci Code;Dan Brown;9780307474278
+B11;The Hunger Games;Suzanne Collins;9780439023528
+B12;The Fault in Our Stars;John Green;9780525478812
+B13;Harry Potter and the Chamber of Secrets;J.K. Rowling;9780439064873
+B14;Harry Potter and the Prisoner of Azkaban;J.K. Rowling;9780439136365
+B15;Harry Potter and the Goblet of Fire;J.K. Rowling;9780439139601
+B16;The Maze Runner;James Dashner;9780385737951
+B17;Divergent;Veronica Roth;9780062024039
+B18;Percy Jackson and the Lightning Thief;Rick Riordan;9780786838653
+B19;Twilight;Stephenie Meyer;9780316015843
+B20;The Chronicles of Narnia: The Lion, the Witch and the Wardrobe;C.S. Lewis;9780064471046
+B21;The Girl with the Dragon Tattoo;Stieg Larsson;9780307454546
+B22;The Kite Runner;Khaled Hosseini;9781594631931
+B23;The Book Thief;Markus Zusak;9780375842207
+B24;The Shining;Stephen King;9780307743657
+B25;A Game of Thrones;George R.R. Martin;9780553593716
+B26;The Cairo Trilogy;Naguib Mahfouz;9780385264761
+B27;Season of Migration to the North;Tayeb Salih;9780435910120
+B28;The Yacoubian Building;Alaa Al Aswany;9789774248633
+B29;Palace Walk;Naguib Mahfouz;9780385264624
+B30;Men in the Sun;Ghassan Kanafani;9780894108570
+B31;Return to Haifa;Ghassan Kanafani;9789963610844
+B32;Memory in the Flesh;Ahlam Mosteghanemi;9789953891157
+B33;Chaos of the Senses;Ahlam Mosteghanemi;9789953891249
+B34;The Bridges of Constantine;Ahlam Mosteghanemi;9789953891232
+B35;Gate of the Sun;Elias Khoury;9780312428036
+B36;Cities of Salt;Abdul Rahman Munif;9780394755267
+B37;The Impostor;Nawal El Saadawi;9780862329537
+B38;Frankenstein in Baghdad;Ahmed Saadawi;9780143128793
+B39;The Bamboo Stalk;Saud Alsanousi;9789927101633
+B40;Azazel;Youssef Ziedan;9789770931843
+

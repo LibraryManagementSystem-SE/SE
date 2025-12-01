@@ -42,6 +42,11 @@ public class User {
     return role;
   }
 
+
+  public String getPassword() {
+    return password;
+  }
+
   public BigDecimal getFineBalance() {
     return fineBalance;
   }

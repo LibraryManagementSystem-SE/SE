@@ -10,9 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Service for admin-specific operations.
- */
+ 
 public class AdminService {
     private final UserRepository userRepository;
     private final AuthService authService;
@@ -23,8 +21,8 @@ public class AdminService {
     }
 
     /**
-     * Register a new admin user.
-     */
+     // Register a new admin user.
+ **/
     public User registerAdmin(String username, String name, String password) {
         ensureUsernameAvailable(username);
         User admin = new User(
@@ -38,9 +36,9 @@ public class AdminService {
         return admin;
     }
 
-    /**
-     * Unregister a user (admin only).
-     */
+   /**
+     // Unregister a user (admin only).
+    **/
     public void unregisterUser(String userId) {
         authService.requireAdmin();
         User user = userRepository.findById(userId)
@@ -56,8 +54,8 @@ public class AdminService {
     }
 
     /**
-     * List all users (admin only).
-     */
+     //List all users (admin only).
+    **/
     public Collection<User> listAllUsers() {
         authService.requireAdmin();
         return userRepository.findAll();

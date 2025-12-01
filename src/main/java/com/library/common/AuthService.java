@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Handles authentication concerns (US1.1/US1.2).
+ * handles authentication concerns (US1.1/US1.2).
  */
 public class AuthService {
   private final UserRepository userRepository;
@@ -18,7 +18,7 @@ public class AuthService {
   }
 
   /**
-   * Authenticates a user with the given username and password.
+   * authenticates a user with the given username and password.
    * 
    * @param username the username to authenticate
    * @param password the password to verify
@@ -28,24 +28,31 @@ public class AuthService {
   public User login(String username, String password) {
     Objects.requireNonNull(username, "Username cannot be null");
     Objects.requireNonNull(password, "Password cannot be null");
-    
+    /**
     // First get the optional user
+     */
     Optional<User> userOptional = userRepository.findByUsername(username);
-    
+    /**
     // If user doesn't exist, throw exception
+     */
     if (!userOptional.isPresent()) {
       throw new LibraryException("Invalid username or password");
     }
-    
+    /**
     // Get the user from the optional
+     */
     User user = userOptional.get();
-    
+    /**
     // Verify password
+     */
     if (!user.passwordMatches(password)) {
       throw new LibraryException("Invalid username or password");
     }
     
+    /**
     // Set current user and return
+    ///**
+     */
     currentUser = user;
     return currentUser;
   }

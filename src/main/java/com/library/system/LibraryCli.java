@@ -250,9 +250,15 @@ public class LibraryCli {
     if (current.isEmpty()) {
       throw new LibraryException("Login required");
     }
+    User user = current.get();
+    if (!user.hasOutstandingFines()) {
+      System.out.println("You have no outstanding fines.");
+      return;
+    }
+    System.out.println("Your current outstanding fine: " + user.getFineBalance());
     System.out.print("Payment amount: ");
     BigDecimal amount = new BigDecimal(scanner.nextLine().trim());
-    BigDecimal remaining = fineService.payFine(current.get().getId(), amount);
+    BigDecimal remaining = fineService.payFine(user.getId(), amount);
     System.out.println("Remaining balance: " + remaining);
   }
 
