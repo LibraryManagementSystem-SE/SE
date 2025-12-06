@@ -1,0 +1,2 @@
+B1;Clean Code;Robert C. Martin;9780132350884
+B2;Effective Java;Joshua Bloch;9780134685991
