@@ -1,5 +1,6 @@
 e5a9069d-0f3c-4262-9d00-84fe1d8185a6;Tala;Tala Edaly;MEMBER;123;0
 7fad87ac-b416-4b7e-87da-b61c21b8be4e;admin;System Admin;ADMIN;admin123;0
 0592815c-0f47-47bc-9cf8-d3f3122fb7e1;salma;salma amjad;MEMBER;salma123;0
+225acc2f-ae32-44be-b7c3-da4687f7867d;tala;Tala;ADMIN;tala123;0
 2424040d-354a-4f1a-a39f-a5e103c11d27;Sadeels;Sadeel ahmad;MEMBER;123;0
 9b5f4044-4a0d-4aa4-be12-21b43364a20f;sally;sally amjad;MEMBER;123;0

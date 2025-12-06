@@ -1,5 +1,4 @@
 package com.library.gui;
-//GUI
 import com.library.domain.User;
 import com.library.service.LibraryException;
 import com.library.system.LibraryEnvironment;
@@ -237,6 +236,12 @@ public class LibraryGUI {
         // Clear the current panel
         frame.remove(currentPanel);
         
+        // If user is admin, show admin dashboard
+        if (isAdmin) {
+            showAdminDashboard(username);
+            return;
+        }
+        
         // Create main panel with border layout
         currentPanel = new JPanel(new BorderLayout());
         currentPanel.setBackground(Color.WHITE);
@@ -311,6 +316,103 @@ public class LibraryGUI {
         
         // Add main panel to frame
         frame.add(currentPanel);
+        
+        // Refresh the frame
+        frame.revalidate();
+        frame.repaint();
+    }
+    
+    private void showAdminDashboard(String username) {
+        // Clear the current panel
+        frame.remove(currentPanel);
+        
+        // Create main panel with border layout
+        currentPanel = new JPanel(new BorderLayout());
+        currentPanel.setBackground(Color.WHITE);
+        
+        // Create header panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(128, 0, 128)); // Purple color for admin
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        
+        // Add welcome message
+        JLabel welcomeLabel = new JLabel("Admin Panel - Welcome, " + username);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        welcomeLabel.setForeground(Color.WHITE);
+        headerPanel.add(welcomeLabel, BorderLayout.WEST);
+        
+        // Add logout button
+        JButton logoutButton = new JButton("Logout");
+        styleButton(logoutButton, new Color(178, 34, 34), Color.WHITE);
+        logoutButton.addActionListener(e -> showLoginPanel());
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(logoutButton);
+        headerPanel.add(buttonPanel, BorderLayout.EAST);
+        
+        // Create content panel with card layout for different views
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Create main dashboard title
+        JLabel titleLabel = new JLabel("System Admin Dashboard", JLabel.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(75, 0, 130));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+        
+        // Create buttons panel with grid layout
+        JPanel buttonsPanel = new JPanel(new GridLayout(3, 2, 20, 20));
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
+        buttonsPanel.setOpaque(false);
+        
+        // Create and add admin buttons
+        JButton addBookBtn = createDashboardButton("Add Book", "📚");
+        JButton addCDBtn = createDashboardButton("Add CD", "💿");
+        JButton sendRemindersBtn = createDashboardButton("Send Reminders", "✉️");
+        JButton overdueReportBtn = createDashboardButton("Show Overdue Report", "📊");
+        JButton listUsersBtn = createDashboardButton("List All Users", "👥");
+        JButton unregisterUserBtn = createDashboardButton("Unregister User", "❌");
+        
+        // Add action listeners for admin buttons
+        addBookBtn.addActionListener(e -> showMessage("Opening Add Book Form"));
+        addCDBtn.addActionListener(e -> showMessage("Opening Add CD Form"));
+        sendRemindersBtn.addActionListener(e -> showMessage("Sending Reminders..."));
+        overdueReportBtn.addActionListener(e -> showMessage("Generating Overdue Report..."));
+        listUsersBtn.addActionListener(e -> showMessage("Listing All Users..."));
+        unregisterUserBtn.addActionListener(e -> showMessage("Opening User Unregistration..."));
+        
+        // Add buttons to panel
+        buttonsPanel.add(addBookBtn);
+        buttonsPanel.add(addCDBtn);
+        buttonsPanel.add(sendRemindersBtn);
+        buttonsPanel.add(overdueReportBtn);
+        buttonsPanel.add(listUsersBtn);
+        buttonsPanel.add(unregisterUserBtn);
+        
+        // Add components to content panel
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        contentPanel.add(buttonsPanel, BorderLayout.CENTER);
+        
+        // Add header and content to main panel
+        currentPanel.add(headerPanel, BorderLayout.NORTH);
+        currentPanel.add(contentPanel, BorderLayout.CENTER);
+        
+        // Add main panel to frame
+        frame.add(currentPanel);
+        
+        // Add keyboard shortcut for logout (Ctrl+L)
+        Action logoutAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showLoginPanel();
+            }
+        };
+        
+        // Bind Ctrl+L to logout
+        KeyStroke logoutKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK);
+        currentPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(logoutKeyStroke, "logout");
+        currentPanel.getActionMap().put("logout", logoutAction);
         
         // Refresh the frame
         frame.revalidate();
