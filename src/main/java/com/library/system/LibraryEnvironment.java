@@ -79,9 +79,12 @@ public class LibraryEnvironment {
     CatalogService catalogService = new CatalogService(mediaRepository, authService);
     UserService userService = new UserService(userRepository, loanRepository, authService);
 
-    // Seed default admin account
-    if (userRepository.findByUsername("admin").isEmpty()) {
-      userService.registerAdmin("admin", "System Admin", "admin123");
+    // Seed default admin accounts
+    if (userRepository.findByUsername("sally").isEmpty()) {
+      userService.registerAdmin("sally", "Sally", "admin123");
+    }
+    if (userRepository.findByUsername("tala").isEmpty()) {
+      userService.registerAdmin("tala", "Tala", "tala123");
     }
 
     return new LibraryEnvironment(
