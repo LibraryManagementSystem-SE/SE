@@ -47,7 +47,7 @@ public class InMemoryLoanRepository implements LoanRepository {
 
   @Override
   public void delete(String id) {
-	// TODO Auto-generated method stub
-	
+      loans.remove(id);
   }
+
 }
