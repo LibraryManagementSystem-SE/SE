@@ -52,6 +52,11 @@ public class InMemoryMediaRepository implements MediaRepository {
     }
     return matches;
   }
+  @Override
+  public void delete(String id) {
+      mediaStore.remove(id);
+  }
+
 }
 
 

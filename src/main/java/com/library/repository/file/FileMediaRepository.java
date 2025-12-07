@@ -189,6 +189,12 @@ public class FileMediaRepository implements MediaRepository {
     }
     return result;
   }
+
+  @Override
+  public void delete(String id) {
+	// TODO Auto-generated method stub
+	
+  }
 }
 
 

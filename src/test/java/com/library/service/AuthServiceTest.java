@@ -9,36 +9,74 @@ import com.library.repository.memory.InMemoryUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 class AuthServiceTest {
 
-  private UserRepository userRepository;
-  private AuthService authService;
+    private UserRepository userRepository;
+    private AuthService authService;
 
-  @BeforeEach
-  void setUp() {
-    userRepository = new InMemoryUserRepository();
-    userRepository.save(new User("1", "admin", "Admin", UserRole.ADMIN, "pass"));
-    authService = new AuthService(userRepository);
-  }
+    @BeforeEach
+    void setUp() {
+        userRepository = new InMemoryUserRepository();
 
-  @Test
-  void loginWithValidCredentialsSucceeds() {
-    User user = authService.login("admin", "pass");
-    assertEquals("Admin", user.getName());
-  }
+        // Admin
+        userRepository.save(new User("1", "admin", "Admin", UserRole.ADMIN, "pass"));
 
-  @Test
-  void loginWithInvalidCredentialsThrows() {
-    assertThrows(LibraryException.class, () -> authService.login("admin", "wrong"));
-  }
+        // Non-admin user
+        userRepository.save(new User("2", "bob", "Bob", UserRole.MEMBER, "pw"));
 
-  @Test
-  void requireAdminEnforcesRole() {
-    authService.login("admin", "pass");
-    assertDoesNotThrow(() -> authService.requireAdmin());
-    authService.logout();
-    assertThrows(LibraryException.class, () -> authService.requireAdmin());
-  }
+        authService = new AuthService(userRepository);
+    }
+
+
+    @Test
+    void loginWithValidCredentialsSucceeds() {
+        User user = authService.login("admin", "pass");
+        assertEquals("Admin", user.getName());
+    }
+
+    @Test
+    void loginWithInvalidCredentialsThrows() {
+        assertThrows(LibraryException.class, () -> authService.login("admin", "wrong"));
+    }
+
+    @Test
+    void requireAdminEnforcesRole() {
+        authService.login("admin", "pass");
+        assertDoesNotThrow(() -> authService.requireAdmin());
+        authService.logout();
+        assertThrows(LibraryException.class, () -> authService.requireAdmin());
+    }
+
+    @Test
+    void loginFailsWithUnknownUsername() {
+        assertThrows(LibraryException.class, () -> authService.login("unknown", "pass"));
+    }
+
+    @Test
+    void logoutClearsCurrentUser() {
+        authService.login("admin", "pass");
+        authService.logout();
+        assertTrue(authService.getCurrentUser().isEmpty());
+    }
+
+    @Test
+    void getCurrentUserReturnsUserAfterLogin() {
+        authService.login("admin", "pass");
+        assertTrue(authService.getCurrentUser().isPresent());
+        assertEquals("admin", authService.getCurrentUser().get().getUsername());
+    }
+
+    @Test
+    void requireAdminFailsWhenUserIsNotAdmin() {
+        authService.login("bob", "pw"); // Member
+        assertThrows(LibraryException.class, () -> authService.requireAdmin());
+    }
+
+    @Test
+    void getCurrentUserEmptyWhenNeverLoggedIn() {
+        assertTrue(authService.getCurrentUser().isEmpty());
+    }
 }
-
 

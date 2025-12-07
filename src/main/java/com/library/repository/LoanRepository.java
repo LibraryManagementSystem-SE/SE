@@ -15,6 +15,8 @@ public interface LoanRepository {
   Optional<Loan> findActiveByMedia(String mediaId);
 
   Collection<Loan> findAll();
+
+  void delete(String id);
 }
 
 
