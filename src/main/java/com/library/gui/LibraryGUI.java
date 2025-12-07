@@ -1,5 +1,8 @@
 package com.library.gui;
 import com.library.domain.User;
+import com.library.domain.Book;
+import com.library.domain.User;
+import java.util.List;
 import com.library.service.LibraryException;
 import com.library.system.LibraryEnvironment;
 import javax.swing.*;
@@ -283,7 +286,7 @@ public class LibraryGUI {
         buttonsPanel.setOpaque(false);
         
         // Create and add buttons
-        JButton searchBooksBtn = createDashboardButton("Search Books", "🔍");
+        JButton searchBooksBtn = createDashboardButton("Search Media", "🔍");
         JButton borrowMediaBtn = createDashboardButton("Borrow Media", "📚");
         JButton returnMediaBtn = createDashboardButton("Return Media", "↩️");
         JButton payFineBtn = createDashboardButton("Pay Fine", "💳");
@@ -375,9 +378,49 @@ public class LibraryGUI {
         JButton unregisterUserBtn = createDashboardButton("Unregister User", "❌");
         
         // Add action listeners for admin buttons
-        addBookBtn.addActionListener(e -> showMessage("Opening Add Book Form"));
-        addCDBtn.addActionListener(e -> showMessage("Opening Add CD Form"));
-        sendRemindersBtn.addActionListener(e -> showMessage("Sending Reminders..."));
+        addBookBtn.addActionListener(e -> showAddBookForm(username));
+        addCDBtn.addActionListener(e -> showAddCDForm(username));
+        sendRemindersBtn.addActionListener(e -> {
+            try {
+                // Send reminders to all users with overdue books
+                List<User> notifiedUsers = environment.getReminderService().sendDailyReminders();
+                
+                // Get the sent messages from the email notifier
+                List<String> sentMessages = environment.getEmailNotifier().getSentMessages();
+                
+                // Build the result message
+                StringBuilder message = new StringBuilder();
+                message.append("Reminders sent to ").append(notifiedUsers.size()).append(" user(s).\n\n");
+                
+                if (!sentMessages.isEmpty()) {
+                    message.append("Messages sent:\n");
+                    for (String msg : sentMessages) {
+                        message.append("- ").append(msg).append("\n");
+                    }
+                } else {
+                    message.append("No overdue books found to send reminders for.");
+                }
+                
+                // Show the results
+                JOptionPane.showMessageDialog(
+                    frame,
+                    message.toString(),
+                    "Reminders Sent",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+                // Clear the sent messages for the next time
+                environment.getEmailNotifier().clear();
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error sending reminders: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
         overdueReportBtn.addActionListener(e -> showMessage("Generating Overdue Report..."));
         listUsersBtn.addActionListener(e -> showMessage("Listing All Users..."));
         unregisterUserBtn.addActionListener(e -> showMessage("Opening User Unregistration..."));
@@ -415,6 +458,303 @@ public class LibraryGUI {
         currentPanel.getActionMap().put("logout", logoutAction);
         
         // Refresh the frame
+        frame.revalidate();
+        frame.repaint();
+    }
+    
+    private void showAddCDForm(String username) {
+        // Create the main panel with border layout
+        JPanel addCDPanel = new JPanel(new BorderLayout());
+        addCDPanel.setBackground(Color.WHITE);
+        
+        // Create header panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(0, 102, 204)); // Blue color for CD form
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        
+        // Add back button to header
+        JButton backButton = new JButton("Back to Admin Dashboard");
+        styleButton(backButton, new Color(0, 102, 204), Color.WHITE);
+        backButton.setBorderPainted(false);
+        backButton.addActionListener(e -> showAdminDashboard(username));
+        
+        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        backButtonPanel.setOpaque(false);
+        backButtonPanel.add(backButton);
+        headerPanel.add(backButtonPanel, BorderLayout.WEST);
+        
+        // Add title
+        JLabel titleLabel = new JLabel("Add New CD", JLabel.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(30, 100, 30, 100));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        
+        // Title
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(10, 0, 5, 10);
+        JLabel titleLabel1 = new JLabel("TITLE");
+        titleLabel1.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        titleLabel1.setForeground(new Color(52, 73, 94));
+        formPanel.add(titleLabel1, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        JTextField titleField = new JTextField(20);
+        styleTextField(titleField);
+        formPanel.add(titleField, gbc);
+        
+        // Artist
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(15, 0, 5, 10);
+        JLabel artistLabel = new JLabel("ARTIST");
+        artistLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        artistLabel.setForeground(new Color(52, 73, 94));
+        formPanel.add(artistLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        JTextField artistField = new JTextField(20);
+        styleTextField(artistField);
+        formPanel.add(artistField, gbc);
+        
+        // Buttons Panel
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonsPanel.setOpaque(false);
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        
+        // Cancel Button
+        JButton cancelButton = new JButton("CANCEL");
+        styleButton(cancelButton, new Color(149, 165, 166), Color.WHITE);
+        cancelButton.addActionListener(e -> showAdminDashboard(username));
+        buttonsPanel.add(cancelButton);
+        
+        // Add CD Button
+        JButton addCDButton = new JButton("ADD CD");
+        styleButton(addCDButton, new Color(46, 204, 113), Color.WHITE);
+        addCDButton.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String artist = artistField.getText().trim();
+            
+            // Validate inputs
+            if (title.isEmpty() || artist.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, 
+                    "Please fill in all fields.", 
+                    "Incomplete Information", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            try {
+                // Create and save the new CD using CatalogService
+                environment.getCatalogService().addCd(title, artist);
+                
+                // Show success message
+                JOptionPane.showMessageDialog(frame, 
+                    "CD added successfully!\nTitle: " + title + "\nArtist: " + artist, 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Clear fields
+                titleField.setText("");
+                artistField.setText("");
+                
+                // Return to admin dashboard
+                showAdminDashboard(username);
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, 
+                    "Error adding CD: " + ex.getMessage(), 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonsPanel.add(addCDButton);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 0, 0, 0);
+        formPanel.add(buttonsPanel, gbc);
+        
+        // Add components to main panel
+        addCDPanel.add(headerPanel, BorderLayout.NORTH);
+        addCDPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // Update the current panel
+        frame.remove(currentPanel);
+        currentPanel = addCDPanel;
+        frame.add(currentPanel);
+        frame.revalidate();
+        frame.repaint();
+    }
+    
+    private void showAddBookForm(String username) {
+        // Create the main panel with border layout
+        JPanel addBookPanel = new JPanel(new BorderLayout());
+        addBookPanel.setBackground(Color.WHITE);
+        
+        // Create header panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(128, 0, 128));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        
+        // Add back button to header
+        JButton backButton = new JButton("Back to Admin Dashboard");
+        styleButton(backButton, new Color(128, 0, 128), Color.WHITE);
+        backButton.setBorderPainted(false);
+        backButton.addActionListener(e -> showAdminDashboard(username));
+        
+        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        backButtonPanel.setOpaque(false);
+        backButtonPanel.add(backButton);
+        headerPanel.add(backButtonPanel, BorderLayout.WEST);
+        
+        // Add title
+        JLabel titleLabel = new JLabel("Add New Book", JLabel.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(30, 100, 30, 100));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        
+        // Title
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(10, 0, 5, 10);
+        JLabel titleLabel1 = new JLabel("TITLE");
+        titleLabel1.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        titleLabel1.setForeground(new Color(52, 73, 94));
+        formPanel.add(titleLabel1, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        JTextField titleField = new JTextField(20);
+        styleTextField(titleField);
+        formPanel.add(titleField, gbc);
+        
+        // Author
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(15, 0, 5, 10);
+        JLabel authorLabel = new JLabel("AUTHOR");
+        authorLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        authorLabel.setForeground(new Color(52, 73, 94));
+        formPanel.add(authorLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        JTextField authorField = new JTextField(20);
+        styleTextField(authorField);
+        formPanel.add(authorField, gbc);
+        
+        // ISBN
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        JLabel isbnLabel = new JLabel("ISBN");
+        isbnLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        isbnLabel.setForeground(new Color(52, 73, 94));
+        formPanel.add(isbnLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        JTextField isbnField = new JTextField(20);
+        styleTextField(isbnField);
+        formPanel.add(isbnField, gbc);
+        
+        // Buttons Panel
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonsPanel.setOpaque(false);
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        
+        // Cancel Button
+        JButton cancelButton = new JButton("CANCEL");
+        styleButton(cancelButton, new Color(149, 165, 166), Color.WHITE);
+        cancelButton.addActionListener(e -> showAdminDashboard(username));
+        buttonsPanel.add(cancelButton);
+        
+        // Add Book Button
+        JButton addBookButton = new JButton("ADD BOOK");
+        styleButton(addBookButton, new Color(46, 204, 113), Color.WHITE);
+        addBookButton.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String author = authorField.getText().trim();
+            String isbn = isbnField.getText().trim();
+            
+            // Validate inputs
+            if (title.isEmpty() || author.isEmpty() || isbn.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, 
+                    "Please fill in all fields.", 
+                    "Incomplete Information", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            try {
+                // Generate a unique ID for the new book
+                String id = "BK" + System.currentTimeMillis();
+                
+                // Create and save the new book using CatalogService
+                Book newBook = environment.getCatalogService().addBook(title, author, isbn);
+                
+                // Show success message
+                JOptionPane.showMessageDialog(frame, 
+                    "Book added successfully!\nID: " + id + "\nTitle: " + title, 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Clear fields
+                titleField.setText("");
+                authorField.setText("");
+                isbnField.setText("");
+                
+                // Return to admin dashboard
+                showAdminDashboard(username);
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, 
+                    "Error adding book: " + ex.getMessage(), 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonsPanel.add(addBookButton);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 0, 0, 0);
+        formPanel.add(buttonsPanel, gbc);
+        
+        // Add components to main panel
+        addBookPanel.add(headerPanel, BorderLayout.NORTH);
+        addBookPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // Update the current panel
+        frame.remove(currentPanel);
+        currentPanel = addBookPanel;
+        frame.add(currentPanel);
         frame.revalidate();
         frame.repaint();
     }
@@ -631,6 +971,6 @@ public class LibraryGUI {
     }
     
     private void showMessage(String message) {
-        JOptionPane.showMessageDialog(frame, message, "Information", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(frame, message);
     }
 }
