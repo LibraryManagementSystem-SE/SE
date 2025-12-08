@@ -1,14 +1,18 @@
 package com.library.gui;
 import com.library.domain.User;
 import com.library.domain.Book;
-import com.library.domain.User;
-import java.util.List;
+import com.library.domain.CD;
+import com.library.domain.Media;
+import com.library.domain.Loan;
 import com.library.service.LibraryException;
 import com.library.system.LibraryEnvironment;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.ListSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 public class LibraryGUI {
     private final LibraryEnvironment environment;
@@ -294,8 +298,305 @@ public class LibraryGUI {
         JButton contactBtn = createDashboardButton("Contact Us", "📞");
         
         // Add action listeners
-        searchBooksBtn.addActionListener(e -> showMessage("Opening Book Search"));
-        borrowMediaBtn.addActionListener(e -> showMessage("Opening Borrow Media"));
+        searchBooksBtn.addActionListener(e -> {
+            try {
+                // Create search dialog
+                JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
+                searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                
+                // Search field
+                JTextField searchField = new JTextField(30);
+                JButton searchButton = new JButton("Search");
+                
+                // Results area
+                String[] columnNames = {"ID", "Type", "Title", "Author/Artist", "Available"};
+                DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        return false; // Make table non-editable
+                    }
+                };
+                JTable resultsTable = new JTable(model);
+                resultsTable.setFillsViewportHeight(true);
+                JScrollPane scrollPane = new JScrollPane(resultsTable);
+                
+                // Add components to search panel
+                JPanel searchBarPanel = new JPanel(new BorderLayout(10, 10));
+                searchBarPanel.add(new JLabel("Search (title/author/ISBN):"), BorderLayout.WEST);
+                searchBarPanel.add(searchField, BorderLayout.CENTER);
+                searchBarPanel.add(searchButton, BorderLayout.EAST);
+                
+                searchPanel.add(searchBarPanel, BorderLayout.NORTH);
+                searchPanel.add(scrollPane, BorderLayout.CENTER);
+                
+                // Search button action
+                ActionListener searchAction = evt -> {
+                    String query = searchField.getText().trim();
+                    try {
+                        // Clear previous results
+                        model.setRowCount(0);
+                        
+                        // Search for media
+                        List<Media> results = environment.getCatalogService().search(query);
+                        
+                        if (results.isEmpty()) {
+                            JOptionPane.showMessageDialog(
+                                frame,
+                                "No matching media found.",
+                                "No Results",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            return;
+                        }
+                        
+                        // Add results to table
+                        for (Media media : results) {
+                            if (media instanceof Book) {
+                                Book book = (Book) media;
+                                model.addRow(new Object[]{
+                                    book.getId(),
+                                    "Book",
+                                    book.getTitle(),
+                                    book.getAuthor(),
+                                    book.isAvailable() ? "Yes" : "No"
+                                });
+                            } else if (media instanceof CD) {
+                                CD cd = (CD) media;
+                                model.addRow(new Object[]{
+                                    cd.getId(),
+                                    "CD",
+                                    cd.getTitle(),
+                                    cd.getArtist(),
+                                    cd.isAvailable() ? "Yes" : "No"
+                                });
+                            }
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "Error searching media: " + ex.getMessage(),
+                            "Search Error",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                };
+                
+                // Add action listeners
+                searchButton.addActionListener(searchAction);
+                searchField.addActionListener(searchAction);
+                
+                // Show search dialog
+                JOptionPane.showOptionDialog(
+                    frame,
+                    searchPanel,
+                    "Search Media",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    new Object[]{},
+                    null
+                );
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error initializing search: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                ex.printStackTrace(); // Print stack trace for debugging
+            }
+        });
+        borrowMediaBtn.addActionListener(e -> {
+            try {
+                // Create search dialog
+                JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
+                searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                
+                // Search field
+                JTextField searchField = new JTextField(30);
+                JButton searchButton = new JButton("Search");
+                
+                // Results area
+                String[] columnNames = {"ID", "Type", "Title", "Author/Artist", "Available"};
+                DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        return false; // Make table non-editable
+                    }
+                };
+                JTable resultsTable = new JTable(model);
+                resultsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+                resultsTable.setFillsViewportHeight(true);
+                JScrollPane scrollPane = new JScrollPane(resultsTable);
+                
+                // Create search bar panel
+                JPanel searchBarPanel = new JPanel(new BorderLayout(10, 10));
+                searchBarPanel.add(new JLabel("Search media to borrow:"), BorderLayout.WEST);
+                searchBarPanel.add(searchField, BorderLayout.CENTER);
+                searchBarPanel.add(searchButton, BorderLayout.EAST);
+                
+                // Create borrow button and its panel
+                JButton borrowButton = new JButton("Borrow Selected");
+                borrowButton.setEnabled(false);
+                
+                // Create button wrapper with proper alignment
+                JPanel buttonWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+                buttonWrapper.setOpaque(false);
+                buttonWrapper.add(borrowButton);
+                
+                // Create main button panel
+                JPanel buttonPanel1 = new JPanel(new java.awt.BorderLayout());
+                buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                buttonPanel.setOpaque(false);
+                buttonPanel.add(buttonWrapper, java.awt.BorderLayout.EAST);
+                
+                // Create bottom panel with border
+                JPanel bottomPanel = new JPanel(new BorderLayout());
+                bottomPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
+                bottomPanel.setBackground(Color.WHITE);
+                bottomPanel.add(buttonPanel, BorderLayout.EAST);
+                
+                // Add all components to search panel
+                searchPanel.add(searchBarPanel, BorderLayout.NORTH);
+                searchPanel.add(scrollPane, BorderLayout.CENTER);
+                searchPanel.add(bottomPanel, BorderLayout.SOUTH);
+                
+                // Add selection listener after button is created
+                resultsTable.getSelectionModel().addListSelectionListener(event -> {
+                    if (!event.getValueIsAdjusting()) {
+                        borrowButton.setEnabled(resultsTable.getSelectedRow() != -1);
+                    }
+                });
+                
+                // Search button action
+                ActionListener searchAction = evt -> {
+                    String query = searchField.getText().trim();
+                    try {
+                        // Clear previous results
+                        model.setRowCount(0);
+                        
+                        // Search for media
+                        List<Media> results = environment.getCatalogService().search(query);
+                        
+                        if (results.isEmpty()) {
+                            JOptionPane.showMessageDialog(
+                                frame,
+                                "No matching media found.",
+                                "No Results",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            return;
+                        }
+                        
+                        // Add results to table
+                        for (Media media : results) {
+                            if (media instanceof Book) {
+                                Book book = (Book) media;
+                                model.addRow(new Object[]{
+                                    book.getId(),
+                                    "Book",
+                                    book.getTitle(),
+                                    book.getAuthor(),
+                                    book.isAvailable() ? "Yes" : "No"
+                                });
+                            } else if (media instanceof CD) {
+                                CD cd = (CD) media;
+                                model.addRow(new Object[]{
+                                    cd.getId(),
+                                    "CD",
+                                    cd.getTitle(),
+                                    cd.getArtist(),
+                                    cd.isAvailable() ? "Yes" : "No"
+                                });
+                            }
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "Error searching media: " + ex.getMessage(),
+                            "Search Error",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                };
+                
+                // Borrow button action
+                borrowButton.addActionListener(borrowEvt -> {
+                    int selectedRow = resultsTable.getSelectedRow();
+                    if (selectedRow >= 0) {
+                        String mediaId = (String) model.getValueAt(selectedRow, 0);
+                        String mediaType = (String) model.getValueAt(selectedRow, 1);
+                        String mediaTitle = (String) model.getValueAt(selectedRow, 2);
+                        
+                        try {
+                            // Get current user
+                            User currentUser = environment.getAuthService().getCurrentUser()
+                                .orElseThrow(() -> new LibraryException("User not logged in"));
+                            
+                            // Borrow the media
+                            Loan loan = environment.getBorrowService().borrow(currentUser.getId(), mediaId);
+                            
+                            // Show success message with due date
+                            String message = String.format(
+                                "Successfully borrowed %s: %s\nDue Date: %s",
+                                mediaType, mediaTitle, loan.getDueDate()
+                            );
+                            
+                            JOptionPane.showMessageDialog(
+                                frame,
+                                message,
+                                "Borrow Successful",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                            
+                            // Refresh the search results
+                            searchAction.actionPerformed(null);
+                            
+                        } catch (LibraryException ex) {
+                            JOptionPane.showMessageDialog(
+                                frame,
+                                "Cannot borrow media: " + ex.getMessage(),
+                                "Borrow Failed",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(
+                                frame,
+                                "Error borrowing media: " + ex.getMessage(),
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+                        }
+                    }
+                });
+                
+                // Add action listeners
+                searchButton.addActionListener(searchAction);
+                searchField.addActionListener(searchAction);
+                
+                // Show search dialog
+                JOptionPane.showOptionDialog(
+                    frame,
+                    searchPanel,
+                    "Borrow Media",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    new Object[]{},
+                    null
+                );
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error initializing borrow media: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                ex.printStackTrace();
+            }
+        });
         returnMediaBtn.addActionListener(e -> showMessage("Opening Return Media"));
         payFineBtn.addActionListener(e -> showMessage("Opening Pay Fine"));
         myProfileBtn.addActionListener(e -> showMessage("Opening Profile"));
@@ -422,8 +723,143 @@ public class LibraryGUI {
             }
         });
         overdueReportBtn.addActionListener(e -> showMessage("Generating Overdue Report..."));
-        listUsersBtn.addActionListener(e -> showMessage("Listing All Users..."));
-        unregisterUserBtn.addActionListener(e -> showMessage("Opening User Unregistration..."));
+        listUsersBtn.addActionListener(e -> {
+            try {
+                // Get all users
+                java.util.Collection<User> users = environment.getUserService().listAllUsers();
+                
+                if (users.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "No users found in the system.",
+                        "No Users",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    return;
+                }
+
+                // Create a formatted string with user details
+                StringBuilder userList = new StringBuilder("<html><body style='width: 300px;'>");
+                userList.append("<h3>All Registered Users</h3>");
+                userList.append("<table border='1' cellpadding='5' style='border-collapse: collapse; width: 100%;'>");
+                userList.append("<tr><th>Name</th><th>ID</th><th>Role</th></tr>");
+                
+                for (User user : users) {
+                    userList.append(String.format(
+                        "<tr><td>%s</td><td>%s</td><td>%s</td></tr>",
+                        user.getName(),
+                        user.getId(),
+                        user.getRole()
+                    ));
+                }
+                
+                userList.append("</table></body></html>");
+                
+                // Create a scrollable panel for the user list
+                JTextPane textPane = new JTextPane();
+                textPane.setContentType("text/html");
+                textPane.setText(userList.toString());
+                textPane.setEditable(false);
+                textPane.setCaretPosition(0);
+                
+                JScrollPane scrollPane = new JScrollPane(textPane);
+                scrollPane.setPreferredSize(new Dimension(500, 300));
+                
+                // Show the user list in a dialog
+                JOptionPane.showMessageDialog(
+                    frame,
+                    scrollPane,
+                    "All Registered Users",
+                    JOptionPane.PLAIN_MESSAGE
+                );
+                
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error retrieving user list: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+        unregisterUserBtn.addActionListener(e -> {
+            try {
+                // Get the list of users
+                java.util.Collection<User> users = environment.getUserService().listAllUsers();
+                
+                // Create an array of user display strings for the dropdown
+                String[] userOptions = users.stream()
+                    .map(user -> String.format("%s (ID: %s, Role: %s)", 
+                        user.getName(), user.getId(), user.getRole()))
+                    .toArray(String[]::new);
+                
+                if (userOptions.length == 0) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "No users found in the system.",
+                        "No Users",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    return;
+                }
+                
+                // Show user selection dialog
+                String selectedUser = (String) JOptionPane.showInputDialog(
+                    frame,
+                    "Select a user to unregister:",
+                    "Unregister User",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    userOptions,
+                    userOptions[0]
+                );
+                
+                if (selectedUser == null) {
+                    return; // User cancelled
+                }
+                
+                // Extract user ID from the selection
+                String userId = selectedUser.substring(
+                    selectedUser.indexOf("ID:") + 4,
+                    selectedUser.indexOf(", Role:")
+                ).trim();
+                
+                // Confirm unregistration
+                int confirm = JOptionPane.showConfirmDialog(
+                    frame,
+                    "Are you sure you want to unregister this user? This action cannot be undone.",
+                    "Confirm Unregistration",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
+                
+                if (confirm == JOptionPane.YES_OPTION) {
+                    try {
+                        environment.getUserService().unregister(userId);
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "User successfully unregistered.",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "Error unregistering user: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "An error occurred: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
         
         // Add buttons to panel
         buttonsPanel.add(addBookBtn);
