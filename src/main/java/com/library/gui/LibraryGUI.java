@@ -12,7 +12,10 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.ListSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.math.BigDecimal;
 import java.util.List;
+import java.awt.Font;
+
 
 public class LibraryGUI {
     private final LibraryEnvironment environment;
@@ -598,9 +601,70 @@ public class LibraryGUI {
             }
         });
         returnMediaBtn.addActionListener(e -> showMessage("Opening Return Media"));
-        payFineBtn.addActionListener(e -> showMessage("Opening Pay Fine"));
+        payFineBtn.addActionListener(e -> handlePayFine());
         myProfileBtn.addActionListener(e -> showMessage("Opening Profile"));
-        contactBtn.addActionListener(e -> showMessage("Opening Contact Page"));
+        contactBtn.addActionListener(e -> {
+            // Create a panel to hold contact information
+            JPanel contactPanel = new JPanel(new GridBagLayout());
+            contactPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(5, 5, 5, 5);
+            
+            // Add contact information with icons
+            JLabel titleLabel1 = new JLabel("Contact Information");
+            titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.gridwidth = 2;
+            gbc.insets = new Insets(0, 0, 15, 0);
+            contactPanel.add(titleLabel, gbc);
+            
+            // Reset insets
+            gbc.insets = new Insets(5, 5, 5, 5);
+            
+            // Email
+            gbc.gridy++;
+            gbc.gridx = 0;
+            gbc.gridwidth = 1;
+            contactPanel.add(new JLabel("📧"), gbc);
+            
+            gbc.gridx = 1;
+            contactPanel.add(new JLabel("Email: support@librarysystem.com"), gbc);
+            
+            // Phone
+            gbc.gridy++;
+            gbc.gridx = 0;
+            contactPanel.add(new JLabel("📞"), gbc);
+            
+            gbc.gridx = 1;
+            contactPanel.add(new JLabel("Phone: +1 (555) 123-4567"), gbc);
+            
+            // Address
+            gbc.gridy++;
+            gbc.gridx = 0;
+            contactPanel.add(new JLabel("🏢"), gbc);
+            
+            gbc.gridx = 1;
+            contactPanel.add(new JLabel("<html>123 Library Lane<br>Bookville, BV 12345</html>"), gbc);
+            
+            // Hours
+            gbc.gridy++;
+            gbc.gridx = 0;
+            contactPanel.add(new JLabel("🕒"), gbc);
+            
+            gbc.gridx = 1;
+            contactPanel.add(new JLabel("<html>Hours:<br>Mon-Fri: 9:00 AM - 8:00 PM<br>Sat-Sun: 10:00 AM - 6:00 PM</html>"), gbc);
+            
+            // Show the contact information in a dialog
+            JOptionPane.showMessageDialog(
+                frame,
+                contactPanel,
+                "Contact Us",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        });
         
         // Add buttons to panel
         buttonsPanel.add(searchBooksBtn);
@@ -1404,6 +1468,106 @@ public class LibraryGUI {
         signUpPanel.add(buttonsPanel, gbc);
         
         return signUpPanel;
+    }
+    
+    private void handlePayFine() {
+        try {
+            // Get current user
+            User currentUser = environment.getAuthService().getCurrentUser()
+                .orElseThrow(() -> new LibraryException("You must be logged in to pay fines"));
+            
+            // Get current fine balance
+            BigDecimal currentBalance = currentUser.getFineBalance();
+            
+            if (currentBalance.signum() <= 0) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "You don't have any outstanding fines to pay.",
+                    "No Outstanding Fines",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                return;
+            }
+            
+            // Create input dialog for payment amount
+            String amountStr = JOptionPane.showInputDialog(
+                frame,
+                String.format("Your current fine balance is: $%.2f%nEnter amount to pay:", currentBalance),
+                "Pay Fine",
+                JOptionPane.PLAIN_MESSAGE
+            );
+            
+            // If user cancelled the dialog
+            if (amountStr == null) {
+                return;
+            }
+            
+            try {
+                // Parse the payment amount
+                BigDecimal paymentAmount = new BigDecimal(amountStr.trim());
+                
+                // Validate the payment amount
+                if (paymentAmount.signum() <= 0) {
+                    throw new NumberFormatException("Payment amount must be positive");
+                }
+                
+                if (paymentAmount.compareTo(currentBalance) > 0) {
+                    throw new NumberFormatException(
+                        String.format("Payment cannot exceed current balance of $%.2f", currentBalance)
+                    );
+                }
+                
+                // Process the payment
+                BigDecimal newBalance = environment.getFineService().payFine(
+                    currentUser.getId(),
+                    paymentAmount
+                );
+                
+                // Show success message
+                String message;
+                if (newBalance.signum() > 0) {
+                    message = String.format(
+                        "Payment of $%.2f processed successfully.%nRemaining balance: $%.2f",
+                        paymentAmount, newBalance
+                    );
+                } else {
+                    message = String.format(
+                        "Payment of $%.2f processed successfully.%nYour fine balance is now cleared!",
+                        paymentAmount
+                    );
+                }
+                
+                JOptionPane.showMessageDialog(
+                    frame,
+                    message,
+                    "Payment Successful",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Invalid amount: " + ex.getMessage(),
+                    "Invalid Input",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            } catch (LibraryException ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error processing payment: " + ex.getMessage(),
+                    "Payment Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                frame,
+                "An error occurred: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            ex.printStackTrace();
+        }
     }
     
     private void showMessage(String message) {
