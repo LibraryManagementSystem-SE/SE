@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Loan;
+import com.library.domain.Media;
 import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.domain.FineStrategyFactory;
@@ -18,6 +19,8 @@ import com.library.support.DateProvider;
 import com.library.support.FakeDateProvider;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +54,17 @@ class BorrowServiceTest {
     cd = new CD("c1", "Kind of Blue", "Miles Davis");
     mediaRepository.save(book);
     mediaRepository.save(cd);
+  }
+  private void removeMediaFromRepository(String id) {
+      try {
+          var field = InMemoryMediaRepository.class.getDeclaredField("mediaStore");
+          field.setAccessible(true);
+          @SuppressWarnings("unchecked")
+          Map<String, Media> store = (Map<String, Media>) field.get(mediaRepository);
+          store.remove(id);
+      } catch (Exception e) {
+          throw new RuntimeException(e);
+      }
   }
 
   @Test
@@ -88,6 +102,65 @@ class BorrowServiceTest {
     assertEquals(BigDecimal.valueOf(20), fine); // 2 days overdue * 10
     assertTrue(book.isAvailable());
   }
+  @Test
+  void borrowFailsWhenMediaAlreadyLoanedOut() {
+      // borrow once
+      borrowService.borrow(user.getId(), book.getId());
+
+      // try borrowing again while unavailable
+      assertThrows(LibraryException.class,
+          () -> borrowService.borrow(user.getId(), book.getId()));
+  }
+
+  @Test
+  void borrowFailsWhenUserDoesNotExist() {
+      assertThrows(LibraryException.class,
+          () -> borrowService.borrow("unknown-user", book.getId()));
+  }
+
+  @Test
+  void borrowFailsWhenMediaDoesNotExist() {
+      assertThrows(LibraryException.class,
+          () -> borrowService.borrow(user.getId(), "missing-media"));
+  }
+
+  @Test
+  void returnMediaReturnsZeroIfAlreadyReturned() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+      borrowService.returnMedia(loan.getId()); // first return
+
+      BigDecimal secondTime = borrowService.returnMedia(loan.getId());
+      assertEquals(BigDecimal.ZERO, secondTime);
+  }
+
+  @Test
+  void returnMediaFailsWhenLoanDoesNotExist() {
+      assertThrows(LibraryException.class,
+          () -> borrowService.returnMedia("missing-loan"));
+  }
+
+  @Test
+  void returnMediaFailsWhenMediaDoesNotExist() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+
+      // use the helper method
+      removeMediaFromRepository(book.getId());
+
+      assertThrows(LibraryException.class,
+          () -> borrowService.returnMedia(loan.getId()));
+  }
+
+  @Test
+  void returnMediaFailsWhenUserDoesNotExist() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+
+      // delete user to simulate data corruption
+      userRepository.delete(user.getId());
+
+      assertThrows(LibraryException.class,
+          () -> borrowService.returnMedia(loan.getId()));
+  }
+
 }
 
 

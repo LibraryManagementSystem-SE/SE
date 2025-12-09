@@ -27,46 +27,54 @@ class FineServiceTest {
   private FineService fineService;
   private LoanRepository loanRepository;
   private FakeDateProvider dateProvider;
+  private MediaRepository mediaRepository;
+  private UserRepository userRepository;
+
 
   @BeforeEach
-  void setUp() {
-    UserRepository userRepository = new InMemoryUserRepository();
-    MediaRepository mediaRepository = new InMemoryMediaRepository();
-    loanRepository = new InMemoryLoanRepository();
-    dateProvider = new FakeDateProvider(LocalDate.of(2025, 2, 1));
-    fineService =
-        new FineService(
-            userRepository,
-            loanRepository,
-            mediaRepository,
-            dateProvider,
-            new FineStrategyFactory());
+	  void setUp() {
+	    // Assign to class fields — not new local variables
+	    this.userRepository = new InMemoryUserRepository();
+	    this.mediaRepository = new InMemoryMediaRepository();
+	    this.loanRepository = new InMemoryLoanRepository();
+	    this.dateProvider = new FakeDateProvider(LocalDate.of(2025, 2, 1));
 
-    user = new User("user1", "bob", "Bob", UserRole.MEMBER, "pw");
-    userRepository.save(user);
+	    fineService =
+	        new FineService(
+	            this.userRepository,
+	            this.loanRepository,
+	            this.mediaRepository,
+	            this.dateProvider,
+	            new FineStrategyFactory());
 
-    Book book = new Book("book1", "Clean Code", "Martin", "111");
-    CD cd = new CD("cd1", "Blue Train", "Coltrane");
-    mediaRepository.save(book);
-    mediaRepository.save(cd);
+	    user = new User("user1", "bob", "Bob", UserRole.MEMBER, "pw");
+	    userRepository.save(user);
 
-    Loan bookLoan =
-        new Loan(
-            "loan1",
-            user.getId(),
-            book.getId(),
-            LocalDate.of(2025, 1, 1),
-            LocalDate.of(2025, 1, 20));
-    Loan cdLoan =
-        new Loan(
-            "loan2",
-            user.getId(),
-            cd.getId(),
-            LocalDate.of(2025, 1, 15),
-            LocalDate.of(2025, 1, 25));
-    loanRepository.save(bookLoan);
-    loanRepository.save(cdLoan);
-  }
+	    Book book = new Book("book1", "Clean Code", "Martin", "111");
+	    CD cd = new CD("cd1", "Blue Train", "Coltrane");
+	    mediaRepository.save(book);
+	    mediaRepository.save(cd);
+
+	    Loan bookLoan =
+	        new Loan(
+	            "loan1",
+	            user.getId(),
+	            book.getId(),
+	            LocalDate.of(2025, 1, 1),
+	            LocalDate.of(2025, 1, 20));
+
+	    Loan cdLoan =
+	        new Loan(
+	            "loan2",
+	            user.getId(),
+	            cd.getId(),
+	            LocalDate.of(2025, 1, 15),
+	            LocalDate.of(2025, 1, 25));
+
+	    loanRepository.save(bookLoan);
+	    loanRepository.save(cdLoan);
+	  }
+
 
   @Test
   void overdueReportAggregatesMixedMedia() {
@@ -82,6 +90,86 @@ class FineServiceTest {
     BigDecimal balance = fineService.payFine(user.getId(), BigDecimal.valueOf(20));
     assertEquals(BigDecimal.valueOf(30), balance);
   }
+  @Test
+  void payFineRejectsZeroOrNegativeAmount() {
+      user.addFine(BigDecimal.valueOf(10));
+
+      assertThrows(LibraryException.class,
+          () -> fineService.payFine(user.getId(), BigDecimal.ZERO));
+
+      assertThrows(LibraryException.class,
+          () -> fineService.payFine(user.getId(), BigDecimal.valueOf(-5)));
+  }
+
+  @Test
+  void payFineThrowsWhenUserNotFound() {
+      assertThrows(LibraryException.class,
+          () -> fineService.payFine("missing", BigDecimal.TEN));
+  }
+
+  @Test
+  void payFineThrowsWhenUserHasNoOutstandingFines() {
+      assertThrows(LibraryException.class,
+          () -> fineService.payFine(user.getId(), BigDecimal.ONE));
+  }
+
+  @Test
+  void payFineThrowsWhenPaymentExceedsFine() {
+      user.addFine(BigDecimal.valueOf(30));
+
+      assertThrows(LibraryException.class,
+          () -> fineService.payFine(user.getId(), BigDecimal.valueOf(40)));
+  }
+
+  @Test
+  void payFineAllowsFullPayment() {
+      user.addFine(BigDecimal.valueOf(25));
+
+      BigDecimal balance = fineService.payFine(user.getId(), BigDecimal.valueOf(25));
+
+      assertEquals(BigDecimal.ZERO, balance);
+  }
+  @Test
+  void generateOverdueReportThrowsWhenUserMissing() {
+      assertThrows(LibraryException.class,
+          () -> fineService.generateOverdueReport("missing"));
+  }
+
+  @Test
+  void generateOverdueReportReturnsEmptyWhenNoOverdues() {
+      // Loans are already overdue in @BeforeEach, so fix their due dates:
+      loanRepository.findAll().forEach(loan -> loan.markReturned(dateProvider.today()));
+
+      var report = fineService.generateOverdueReport(user.getId());
+
+      assertEquals(0, report.getItems().size());
+      assertEquals(BigDecimal.ZERO, report.getTotalFine());
+  }
+
+  @Test
+  void generateOverdueReportSkipsNonOverdueLoans() {
+      // Change both loans to not overdue
+      loanRepository.findAll().forEach(
+          loan -> {
+              loan.markReturned(dateProvider.today());
+          }
+      );
+
+      var report = fineService.generateOverdueReport(user.getId());
+      assertTrue(report.getItems().isEmpty());
+  }
+
+  @Test
+  void generateOverdueReportThrowsWhenMediaMissing() {
+      // Remove media that is referenced by an existing loan
+      ((InMemoryMediaRepository) mediaRepository).delete("book1");
+
+      assertThrows(LibraryException.class,
+              () -> fineService.generateOverdueReport(user.getId()));
+  }
+
+
+
 }
 
 

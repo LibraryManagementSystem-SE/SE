@@ -13,6 +13,10 @@ public interface MediaRepository {
   Collection<Media> findAll();
 
   List<Media> search(String query);
+  
+  void delete(String id);
+
 }
+
 
 
