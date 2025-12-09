@@ -1,15 +1,17 @@
 package com.library.domain;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-
- //Represents both administrators and members.
-
-public class User {
+/**
+ * Represents both administrators and members.
+ */
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
   private final String id;
   private final String username;
   private final String name;
