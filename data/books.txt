@@ -38,3 +38,5 @@ B37;The Impostor;Nawal El Saadawi;9780862329537
 B38;Frankenstein in Baghdad;Ahmed Saadawi;9780143128793
 B39;The Bamboo Stalk;Saud Alsanousi;9789927101633
 B40;Azazel;Youssef Ziedan;9789770931843
+be124a9e-029f-4539-b5ef-f14f842178cd;Clean Code;Robert C. Martin;9780132350884
+fc5085d5-a949-415b-adba-a5081d2466ed;Design Patterns;Erich Gamma;9780201633610
