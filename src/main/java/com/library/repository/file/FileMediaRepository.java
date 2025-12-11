@@ -24,13 +24,13 @@ import java.util.Optional;
  * <p>Books file format (`books.txt`):
  *
  * <pre>
- * id;title;author;isbn
+ * id;title;author;isbn;quantity
  * </pre>
  *
  * <p>CDs file format (`cds.txt`):
  *
  * <pre>
- * id;title;artist
+ * id;title;artist;quantity
  * </pre>
  *
  * <p>This is intentionally simple and not optimized – it rewrites the whole file on each save.
@@ -73,24 +73,33 @@ public class FileMediaRepository implements MediaRepository {
 
   @Override
   public List<Media> search(String query) {
-    if (query == null || query.isBlank()) {
-      return new ArrayList<>(findAll());
-    }
-    String needle = query.toLowerCase();
-    List<Media> matches = new ArrayList<>();
-    for (Media media : findAll()) {
-      if (media.getTitle().toLowerCase().contains(needle)) {
-        matches.add(media);
-        continue;
+      if (query == null || query.isBlank()) {
+          return new ArrayList<>(findAll());
       }
-      if (media.getType() == MediaType.BOOK && media instanceof Book book) {
-        if (book.getAuthor().toLowerCase().contains(needle)
-            || book.getIsbn().toLowerCase().contains(needle)) {
-          matches.add(media);
-        }
+      String needle = query.toLowerCase();
+      List<Media> matches = new ArrayList<>();
+      for (Media media : findAll()) {
+          // Search by title for all media types
+          if (media.getTitle().toLowerCase().contains(needle)) {
+              matches.add(media);
+              continue;
+          }
+          
+          // For books, search by author and ISBN
+          if (media.getType() == MediaType.BOOK && media instanceof Book book) {
+              if (book.getAuthor().toLowerCase().contains(needle) || 
+                  book.getIsbn().toLowerCase().contains(needle)) {
+                  matches.add(media);
+              }
+          } 
+          // For CDs, search by artist
+          else if (media.getType() == MediaType.CD && media instanceof CD cd) {
+              if (cd.getArtist().toLowerCase().contains(needle)) {
+                  matches.add(media);
+              }
+          }
       }
-    }
-    return matches;
+      return matches;
   }
 
   private void writeAll(List<Media> all) {
@@ -100,23 +109,25 @@ public class FileMediaRepository implements MediaRepository {
       List<String> cdLines = new ArrayList<>();
       for (Media media : all) {
         if (media.getType() == MediaType.BOOK && media instanceof Book book) {
-          // id;title;author;isbn
+          // id;title;author;isbn;quantity
           String line =
               String.join(
                   ";",
                   escape(book.getId()),
                   escape(book.getTitle()),
                   escape(book.getAuthor()),
-                  escape(book.getIsbn()));
+                  escape(book.getIsbn()),
+                  String.valueOf(book.getQuantity()));
           bookLines.add(line);
         } else if (media.getType() == MediaType.CD && media instanceof CD cd) {
-          // id;title;artist
+          // id;title;artist;quantity
           String line =
               String.join(
                   ";",
                   escape(cd.getId()),
                   escape(cd.getTitle()),
-                  escape(cd.getArtist()));
+                  escape(cd.getArtist()),
+                  String.valueOf(cd.getQuantity()));
           cdLines.add(line);
         }
       }
@@ -147,7 +158,7 @@ public class FileMediaRepository implements MediaRepository {
           continue;
         }
         String[] parts = line.split(";");
-        // Expect: id;title;author;isbn
+        // Expect: id;title;author;isbn;quantity
         if (parts.length < 4) {
           continue;
         }
@@ -155,7 +166,17 @@ public class FileMediaRepository implements MediaRepository {
         String title = parts[1];
         String author = parts[2];
         String isbn = parts[3];
-        result.add(new Book(id, title, author, isbn));
+        int quantity = 1;
+        if (parts.length >= 5) {
+          try {
+            quantity = Integer.parseInt(parts[4]);
+          } catch (NumberFormatException ignored) {
+            quantity = 1;
+          }
+        }
+        Book book = new Book(id, title, author, isbn);
+        book.setQuantity(quantity);
+        result.add(book);
       }
     } catch (IOException e) {
       throw new RuntimeException("Failed to read books file: " + booksFile, e);
@@ -175,14 +196,24 @@ public class FileMediaRepository implements MediaRepository {
           continue;
         }
         String[] parts = line.split(";");
-        // Expect: id;title;artist
+        // Expect: id;title;artist;quantity
         if (parts.length < 3) {
           continue;
         }
         String id = parts[0];
         String title = parts[1];
         String artist = parts[2];
-        result.add(new CD(id, title, artist));
+        int quantity = 1;
+        if (parts.length >= 4) {
+          try {
+            quantity = Integer.parseInt(parts[3]);
+          } catch (NumberFormatException ignored) {
+            quantity = 1;
+          }
+        }
+        CD cd = new CD(id, title, artist);
+        cd.setQuantity(quantity);
+        result.add(cd);
       }
     } catch (IOException e) {
       throw new RuntimeException("Failed to read CDs file: " + cdsFile, e);

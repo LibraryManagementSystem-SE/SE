@@ -18,7 +18,7 @@ import com.library.service.FineService;
 import com.library.service.ReminderService;
 import com.library.service.UserService;
 import com.library.support.DateProvider;
-
+import com.library.repository.LoanRepository;
 /**
  * Wiring helper for the layered architecture.
  */
@@ -30,23 +30,33 @@ public class LibraryEnvironment {
   private final ReminderService reminderService;
   private final UserService userService;
   private final EmailNotifier emailNotifier;
+  private final LoanRepository loanRepository;
+  private final MediaRepository mediaRepository;
+  private final DateProvider dateProvider;
 
   private LibraryEnvironment(
-      AuthService authService,
-      CatalogService catalogService,
-      BorrowService borrowService,
-      FineService fineService,
-      ReminderService reminderService,
-      UserService userService,
-      EmailNotifier emailNotifier) {
-    this.authService = authService;
-    this.catalogService = catalogService;
-    this.borrowService = borrowService;
-    this.fineService = fineService;
-    this.reminderService = reminderService;
-    this.userService = userService;
-    this.emailNotifier = emailNotifier;
-  }
+		    AuthService authService,
+		    CatalogService catalogService,
+		    BorrowService borrowService,
+		    FineService fineService,
+		    ReminderService reminderService,
+		    UserService userService,
+		    EmailNotifier emailNotifier,
+		    LoanRepository loanRepository,
+	  		MediaRepository mediaRepository,
+	  		DateProvider dateProvider) {
+		  this.authService = authService;
+		  this.catalogService = catalogService;
+		  this.borrowService = borrowService;
+		  this.fineService = fineService;
+		  this.reminderService = reminderService;
+		  this.userService = userService;
+		  this.emailNotifier = emailNotifier;
+		  this.loanRepository = loanRepository; 
+		  this.mediaRepository = mediaRepository;  
+		  this.dateProvider = dateProvider;  
+
+		}
 
   public static LibraryEnvironment bootstrap() {
     // Use file-based repositories for users and media so data is kept between runs.
@@ -89,13 +99,16 @@ public class LibraryEnvironment {
     }
 
     return new LibraryEnvironment(
-        authService,
-        catalogService,
-        borrowService,
-        fineService,
-        reminderService,
-        userService,
-        emailNotifier);
+    	    authService,
+    	    catalogService,
+    	    borrowService,
+    	    fineService,
+    	    reminderService,
+    	    userService,
+    	    emailNotifier,
+    	    loanRepository,
+    	    mediaRepository,
+    	    dateProvider);
   }
 
   public AuthService getAuthService() {
@@ -125,6 +138,26 @@ public class LibraryEnvironment {
   public EmailNotifier getEmailNotifier() {
     return emailNotifier;
   }
+
+  /**
+   * Returns the loan repository instance, initializing it if necessary.
+   * @return the loan repository instance
+   */
+  public LoanRepository getLoanRepository() {
+	    return loanRepository;
+	}
+
+  public MediaRepository getMediaRepository() {
+	    return mediaRepository;
+	}
+  public UserRepository getUserRepository() {
+	    return userService.getUserRepository();
+	}
+
+
+  public DateProvider getDateProvider() {
+	    return dateProvider;
+	}
 }
 
 

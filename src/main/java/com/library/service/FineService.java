@@ -57,6 +57,8 @@ public class FineService {
     }
 
     user.payFine(amount);
+    // Persist updated balance so subsequent operations see the change.
+    userRepository.save(user);
     return user.getFineBalance();
   }
 
