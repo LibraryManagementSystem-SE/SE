@@ -1,21 +1,32 @@
 package com.library.gui;
+
 import com.library.domain.User;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Media;
+import com.library.domain.MediaType;
 import com.library.domain.Loan;
 import com.library.service.LibraryException;
+import com.library.service.BorrowService;
+import com.library.repository.LoanRepository;
+import com.library.repository.MediaRepository;
 import com.library.system.LibraryEnvironment;
+import com.library.support.DateProvider;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.*;
 import javax.swing.ListSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.awt.Font;
-
+import java.util.Optional;
+import java.util.UUID;
 
 public class LibraryGUI {
     private final LibraryEnvironment environment;
@@ -23,12 +34,22 @@ public class LibraryGUI {
     private JPanel currentPanel;
     private JTextField usernameField;
     private JPasswordField passwordField;
-    
+    /**
+     * Creates the graphical user interface for the Library Management System.
+     *
+     * @param environment the application environment containing services and repositories
+     */
+
+
     public LibraryGUI(LibraryEnvironment environment) {
         this.environment = environment;
         initialize();
     }
-    
+    /**
+     * Application entry point. Initializes the environment and launches the GUI.
+     *
+     * @param args command-line arguments (unused)
+     */
     public static void main(String[] args) {
         // Set the application to use the system look and feel
         try {
@@ -36,7 +57,7 @@ public class LibraryGUI {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         // Run the GUI on the Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
             try {
@@ -45,14 +66,19 @@ public class LibraryGUI {
                 new LibraryGUI(environment);
             } catch (Exception e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(null, 
-                    "Failed to initialize the application: " + e.getMessage(), 
-                    "Initialization Error", 
+                JOptionPane.showMessageDialog(null,
+                    "Failed to initialize the application: " + e.getMessage(),
+                    "Initialization Error",
                     JOptionPane.ERROR_MESSAGE);
             }
         });
     }
-    
+
+    /**
+     * Initializes the main application window and displays the login screen.
+     * Sets basic styling and prepares the main JFrame.
+     */
+   
     private void initialize() {
         try {
             // Set system look and feel for a native appearance
@@ -60,14 +86,14 @@ public class LibraryGUI {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         // Create the main window
         frame = new JFrame("Library Management System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 700);
         frame.setMinimumSize(new Dimension(800, 600));
         frame.setLocationRelativeTo(null);
-        
+
         // Set application icon
         try {
             ImageIcon icon = new ImageIcon(getClass().getResource("/images/library-icon.png"));
@@ -75,33 +101,33 @@ public class LibraryGUI {
         } catch (Exception e) {
             System.out.println("Icon not found, using default");
         }
-        
-        // Show login panel by default
+
         showLoginPanel();
-        
-        // Make the window visible
+
         frame.setVisible(true);
     }
-    
+    /**
+     * Displays the login screen where users can enter their credentials.
+     * Replaces any currently visible panel.
+     */
     private void showLoginPanel() {
-        // Clear the current panel if it exists
         if (currentPanel != null) {
             frame.remove(currentPanel);
         }
-        
+
         // Create the main panel with card layout
         currentPanel = new JPanel(new CardLayout());
         currentPanel.setBackground(new Color(240, 240, 245));
-        
+
         // Create the login card
         JPanel loginCard = new JPanel(new GridBagLayout());
         loginCard.setBackground(Color.WHITE);
         loginCard.setBorder(BorderFactory.createEmptyBorder(40, 60, 60, 60));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        
+
         // Title
         JLabel titleLabel = new JLabel("Library Management System");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
@@ -112,7 +138,7 @@ public class LibraryGUI {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 0, 30, 0);
         loginCard.add(titleLabel, gbc);
-        
+
         // Username
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -123,12 +149,12 @@ public class LibraryGUI {
         userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         userLabel.setForeground(new Color(52, 73, 94));
         loginCard.add(userLabel, gbc);
-        
+
         gbc.gridy = 2;
         usernameField = new JTextField(20);
         styleTextField(usernameField);
         loginCard.add(usernameField, gbc);
-        
+
         // Password
         gbc.gridy = 3;
         gbc.insets = new Insets(20, 0, 5, 0);
@@ -136,12 +162,12 @@ public class LibraryGUI {
         passLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         passLabel.setForeground(new Color(52, 73, 94));
         loginCard.add(passLabel, gbc);
-        
+
         gbc.gridy = 4;
         passwordField = new JPasswordField(20);
         stylePasswordField(passwordField);
         loginCard.add(passwordField, gbc);
-        
+
         // Login Button
         gbc.gridy = 5;
         gbc.insets = new Insets(30, 0, 10, 0);
@@ -149,7 +175,7 @@ public class LibraryGUI {
         styleButton(loginButton, new Color(52, 152, 219), Color.WHITE);
         loginButton.addActionListener(e -> attemptLogin());
         loginCard.add(loginButton, gbc);
-        
+
         // Sign Up Button
         gbc.gridy = 6;
         gbc.insets = new Insets(0, 0, 15, 0);
@@ -157,19 +183,19 @@ public class LibraryGUI {
         styleButton(signUpButton, new Color(46, 204, 113), Color.WHITE);
         signUpButton.addActionListener(e -> showSignUpPanel());
         loginCard.add(signUpButton, gbc);
-        
+
         // Add the login card to the main panel
         currentPanel.add(loginCard, "login");
         frame.add(currentPanel);
-        
+
         // Make sure the password field can be submitted with Enter key
         passwordField.addActionListener(e -> attemptLogin());
-        
+
         // Refresh the frame
         frame.revalidate();
         frame.repaint();
     }
-    
+
     private void styleTextField(JTextField textField) {
         textField.setPreferredSize(new Dimension(300, 40));
         textField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -178,12 +204,12 @@ public class LibraryGUI {
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
     }
-    
+
     private void stylePasswordField(JPasswordField passwordField) {
         styleTextField(passwordField);
         passwordField.setEchoChar('•');
     }
-    
+
     private void styleButton(JButton button, Color bgColor, Color fgColor) {
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setBackground(bgColor);
@@ -194,63 +220,109 @@ public class LibraryGUI {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setPreferredSize(new Dimension(300, 45));
     }
-    
+
+    private JButton createDashboardButton(String text, String icon) {
+        JButton button = new JButton("<html><div style='text-align:center;'>" + 
+            "<span style='font-size:24px;'>" + icon + "</span><br/>" + text + "</div>");
+        
+        // Base styling
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setForeground(new Color(44, 62, 80));
+        button.setBackground(new Color(236, 240, 241));
+        button.setFocusPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(189, 195, 199), 1),
+            BorderFactory.createEmptyBorder(20, 10, 20, 10)
+        ));
+        
+        // Hover effects
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(230, 233, 235));
+                button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
+            
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(236, 240, 241));
+                button.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+        });
+        
+        // Click effect
+        button.addChangeListener(e -> {
+            if (button.getModel().isPressed()) {
+                button.setBackground(new Color(220, 223, 225));
+            } else {
+                button.setBackground(new Color(236, 240, 241));
+            }
+        });
+        
+        // Make the button non-opaque for better hover effects
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        
+        return button;
+    }
+
     private void attemptLogin() {
         String username = usernameField.getText().trim();
         char[] password = passwordField.getPassword();
-        
+
         if (username.isEmpty() || password.length == 0) {
-            JOptionPane.showMessageDialog(frame, 
-                "Please enter both username and password.", 
-                "Login Failed", 
+            JOptionPane.showMessageDialog(frame,
+                "Please enter both username and password.",
+                "Login Failed",
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         try {
             // Authenticate the user
             User user = environment.getAuthService().login(username, new String(password));
-            
+
             // Clear the password field for security
             passwordField.setText("");
-            
+
             // Show success message
-            JOptionPane.showMessageDialog(frame, 
-                "Login successful! Welcome, " + user.getName() + ".", 
-                "Login Successful", 
+            JOptionPane.showMessageDialog(frame,
+                "Login successful! Welcome, " + user.getName() + ".",
+                "Login Successful",
                 JOptionPane.INFORMATION_MESSAGE);
-            
+
             // Show main dashboard with user info
             showMainDashboard(user.getName(), user.isAdmin());
-            
+
         } catch (LibraryException ex) {
             // Clear the password field on failed login
             passwordField.setText("");
-            
-            JOptionPane.showMessageDialog(frame, 
-                "Invalid username or password. Please try again.", 
-                "Login Failed", 
+
+            JOptionPane.showMessageDialog(frame,
+                "Invalid username or password. Please try again.",
+                "Login Failed",
                 JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
             // Clear the password field on error
             passwordField.setText("");
-            
-            JOptionPane.showMessageDialog(frame, 
-                "An error occurred: " + ex.getMessage(), 
-                "Error", 
+
+            JOptionPane.showMessageDialog(frame,
+                "An error occurred: " + ex.getMessage(),
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    private void showMainDashboard(String username, boolean isAdmin) {
+    /**
+     * Displays the admin dashboard, which provides access to system management features
+     * such as user management and media administration.
+     *
+     * @param username the admin user's name
+     */
+
+
+    private void showAdminDashboard(String username) {
         // Clear the current panel
         frame.remove(currentPanel);
-        
-        // If user is admin, show admin dashboard
-        if (isAdmin) {
-            showAdminDashboard(username);
-            return;
-        }
         
         // Create main panel with border layout
         currentPanel = new JPanel(new BorderLayout());
@@ -258,11 +330,11 @@ public class LibraryGUI {
         
         // Create header panel
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(52, 152, 219));
+        headerPanel.setBackground(new Color(52, 73, 94));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         
         // Add welcome message
-        JLabel welcomeLabel = new JLabel("Welcome, " + username + (isAdmin ? " (Admin)" : " (User)"));
+        JLabel welcomeLabel = new JLabel("Welcome, " + username + " (Admin)");
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         welcomeLabel.setForeground(Color.WHITE);
         headerPanel.add(welcomeLabel, BorderLayout.WEST);
@@ -282,7 +354,7 @@ public class LibraryGUI {
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Create main dashboard title
-        JLabel titleLabel = new JLabel("Library Dashboard", JLabel.CENTER);
+        JLabel titleLabel = new JLabel("Admin Dashboard", JLabel.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(44, 62, 80));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
@@ -292,1285 +364,1463 @@ public class LibraryGUI {
         buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
         buttonsPanel.setOpaque(false);
         
-        // Create and add buttons
-        JButton searchBooksBtn = createDashboardButton("Search Media", "🔍");
-        JButton borrowMediaBtn = createDashboardButton("Borrow Media", "📚");
-        JButton returnMediaBtn = createDashboardButton("Return Media", "↩️");
-        JButton payFineBtn = createDashboardButton("Pay Fine", "💳");
-        JButton myProfileBtn = createDashboardButton("My Profile", "👤");
-        JButton contactBtn = createDashboardButton("Contact Us", "📞");
+        JButton manageUsersBtn = createDashboardButton("Manage Users", "👥");
+        manageUsersBtn.addActionListener(e -> showManageUsersPanel());
+
         
-        // Add action listeners
-        searchBooksBtn.addActionListener(e -> {
+        JButton addMediaBtn = createDashboardButton("Add Media", "➕");
+        addMediaBtn.addActionListener(e -> {
+            // Show dialog to add new media
+            showAddMediaDialog();
+        });
+        
+        JButton viewReportsBtn = createDashboardButton("View Reports", "📊");
+        viewReportsBtn.addActionListener(e -> {
+            JOptionPane.showMessageDialog(frame, "View Reports functionality coming soon!");
+        });
+        
+        JButton manageLoansBtn = createDashboardButton("Manage Loans", "📚");
+        manageLoansBtn.addActionListener(e -> {
+            JOptionPane.showMessageDialog(frame, "Manage Loans functionality coming soon!");
+        });
+        
+        JButton systemSettingsBtn = createDashboardButton("System Settings", "⚙️");
+        systemSettingsBtn.addActionListener(e -> {
+            JOptionPane.showMessageDialog(frame, "System Settings functionality coming soon!");
+        });
+        
+        // Add buttons to panel
+        buttonsPanel.add(manageUsersBtn);
+        buttonsPanel.add(addMediaBtn);
+        buttonsPanel.add(viewReportsBtn);
+        buttonsPanel.add(manageLoansBtn);
+        buttonsPanel.add(systemSettingsBtn);
+        
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        contentPanel.add(buttonsPanel, BorderLayout.CENTER);
+        
+        currentPanel.add(headerPanel, BorderLayout.NORTH);
+        currentPanel.add(contentPanel, BorderLayout.CENTER);
+        
+        frame.add(currentPanel);
+        frame.revalidate();
+        frame.repaint();
+    }
+    
+    private void showAddMediaDialog() {
+        JDialog dialog = new JDialog(frame, "Add New Media", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(400, 400);
+        dialog.setLocationRelativeTo(frame);
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Media Type
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        formPanel.add(new JLabel("Media Type:"), gbc);
+        
+        gbc.gridx = 1;
+        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"Book", "CD"});
+        formPanel.add(typeCombo, gbc);
+        
+        // Title
+        gbc.gridx = 0;
+        gbc.gridy++;
+        formPanel.add(new JLabel("Title:"), gbc);
+        
+        gbc.gridx = 1;
+        JTextField titleField = new JTextField(20);
+        formPanel.add(titleField, gbc);
+        
+        // Author/Artist
+        gbc.gridx = 0;
+        gbc.gridy++;
+        formPanel.add(new JLabel("Author/Artist:"), gbc);
+        
+        gbc.gridx = 1;
+        JTextField creatorField = new JTextField(20);
+        formPanel.add(creatorField, gbc);
+        
+        // ISBN (for books)
+        gbc.gridx = 0;
+        gbc.gridy++;
+        JLabel isbnLabel = new JLabel("ISBN:");
+        formPanel.add(isbnLabel, gbc);
+        
+        gbc.gridx = 1;
+        JTextField isbnField = new JTextField(20);
+        formPanel.add(isbnField, gbc);
+        
+        // Update fields based on media type selection
+        typeCombo.addActionListener(e -> {
+            boolean isBook = typeCombo.getSelectedItem().equals("Book");
+            isbnLabel.setVisible(isBook);
+            isbnField.setVisible(isBook);
+            formPanel.revalidate();
+            formPanel.repaint();
+            dialog.pack();
+        });
+        
+        // Set initial state
+        isbnLabel.setVisible(true);
+        isbnField.setVisible(true);
+        
+        // Buttons panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton cancelButton = new JButton("Cancel");
+        JButton addButton = new JButton("Add");
+        
+        cancelButton.addActionListener(e -> dialog.dispose());
+        addButton.addActionListener(e -> {
+            String type = (String) typeCombo.getSelectedItem();
+            String title = titleField.getText().trim();
+            String creator = creatorField.getText().trim();
+            String isbn = isbnField.getText().trim();
+            
+            if (title.isEmpty() || creator.isEmpty() || (type.equals("Book") && isbn.isEmpty())) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Please fill in all required fields.", 
+                    "Incomplete Information", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+         // Replace the TODO section in showAddMediaDialog() with this code:
             try {
-                // Create search dialog
-                JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
-                searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                
-                // Search field
-                JTextField searchField = new JTextField(30);
-                JButton searchButton = new JButton("Search");
-                
-                // Results area
-                String[] columnNames = {"ID", "Type", "Title", "Author/Artist", "Available"};
-                DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
-                    @Override
-                    public boolean isCellEditable(int row, int column) {
-                        return false; // Make table non-editable
+                if (type.equals("Book")) {
+                    // Create a new book with the provided ISBN
+                    Book book = new Book(
+                        UUID.randomUUID().toString(), // Internal unique ID
+                        title,
+                        creator, // This is the author for books
+                        isbn     // Using the ISBN from the input field
+                    );
+                    environment.getMediaRepository().save(book);
+                } else {
+                    // For CDs, we don't need ISBN
+                    CD cd = new CD(
+                        UUID.randomUUID().toString(), // Internal unique ID
+                        title,
+                        creator  // This is the artist for CDs
+                    );
+                    environment.getMediaRepository().save(cd);
+                }
+
+                JOptionPane.showMessageDialog(dialog, 
+                    "Media added successfully!", 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+
+                // Refresh the admin dashboard to show the new item
+                if (currentPanel != null) {
+                    showAdminDashboard(environment.getAuthService().getCurrentUser().get().getUsername());
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "Error adding media: " + ex.getMessage(), 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace(); // This will help us see any errors in the console
+            }
+        });
+        
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(addButton);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.pack();
+        dialog.setVisible(true);
+    }
+    /**
+     * Displays the main dashboard for the currently logged-in user.
+     * Shows different features based on whether the user is an admin or a standard user.
+     *
+     * @param username the name of the logged-in user
+     * @param isAdmin whether the logged-in user has admin privileges
+     */
+
+    private void showMainDashboard(String username, boolean isAdmin) {
+        // Clear the current panel
+        frame.remove(currentPanel);
+
+        // If user is admin, show admin dashboard
+        if (isAdmin) {
+            showAdminDashboard(username);
+            return;
+        }
+        
+        // Create main panel with border layout
+        currentPanel = new JPanel(new BorderLayout());
+        currentPanel.setBackground(Color.WHITE);
+
+        // Create header panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(52, 152, 219));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        // Add welcome message
+        JLabel welcomeLabel = new JLabel("Welcome, " + username + (isAdmin ? " (Admin)" : " (User)"));
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        welcomeLabel.setForeground(Color.WHITE);
+        headerPanel.add(welcomeLabel, BorderLayout.WEST);
+
+        // Create content panel
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Create main dashboard title
+        JLabel titleLabel = new JLabel("Library Dashboard", JLabel.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(44, 62, 80));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
+
+        // Create buttons panel with grid layout
+        JPanel buttonsPanel = new JPanel(new GridLayout(2, 2, 20, 20));
+        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
+        buttonsPanel.setOpaque(false);
+
+        // Create and add buttons with full functionality
+        JButton searchBooksBtn = createDashboardButton("Search Media", "🔍");
+        searchBooksBtn.addActionListener(e -> showSearchMediaPanel());
+
+        JButton borrowMediaBtn = createDashboardButton("Borrow Media", "📚");
+        borrowMediaBtn.addActionListener(e -> showBorrowMediaPanel());
+
+        JButton returnMediaBtn = createDashboardButton("Return Media", "↩️");
+        returnMediaBtn.addActionListener(e -> showReturnMediaPanel());
+        
+        JButton myAccountBtn = createDashboardButton("My Account", "👤");
+        myAccountBtn.addActionListener(e -> showMyAccountPanel());
+
+        buttonsPanel.add(searchBooksBtn);
+        buttonsPanel.add(borrowMediaBtn);
+        buttonsPanel.add(returnMediaBtn);
+        buttonsPanel.add(myAccountBtn);
+
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        contentPanel.add(buttonsPanel, BorderLayout.CENTER);
+
+        // Create bottom buttons panel (Contact Us, Pay Fine, Logout)
+        JPanel bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
+        bottomButtonPanel.setBackground(Color.WHITE);
+        bottomButtonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(200, 200, 200)));
+
+        // Create and style the bottom buttons
+        JButton contactUsBtn = new JButton("Contact Us");
+        styleButton(contactUsBtn, new Color(155, 89, 182), Color.WHITE);
+        contactUsBtn.addActionListener(e -> showContactUsDialog());
+        
+        JButton payFineBtn = new JButton("Pay Fine");
+        styleButton(payFineBtn, new Color(243, 156, 18), Color.WHITE);
+        payFineBtn.addActionListener(e -> showPayFineDialog());
+        
+        JButton logoutButton = new JButton("Logout");
+        styleButton(logoutButton, new Color(231, 76, 60), Color.WHITE);
+        logoutButton.addActionListener(e -> showLoginPanel());
+        
+        // Add buttons to bottom panel
+        bottomButtonPanel.add(contactUsBtn);
+        bottomButtonPanel.add(payFineBtn);
+        bottomButtonPanel.add(logoutButton);
+
+        // Add footer
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        footerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        footerPanel.setBackground(Color.WHITE);
+        JLabel footerLabel = new JLabel("© 2025 Library Management System");
+        footerLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        footerLabel.setForeground(new Color(100, 100, 100));
+        footerPanel.add(footerLabel);
+
+        // Create a container for the main content and bottom buttons
+        JPanel mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.add(contentPanel, BorderLayout.CENTER);
+        mainContentPanel.add(bottomButtonPanel, BorderLayout.SOUTH);
+
+        // Add all components to the main panel
+        currentPanel.add(headerPanel, BorderLayout.NORTH);
+        currentPanel.add(mainContentPanel, BorderLayout.CENTER);
+        currentPanel.add(footerPanel, BorderLayout.SOUTH);
+
+        frame.add(currentPanel);
+        frame.revalidate();
+        frame.repaint();
+    }
+    private void showMyAccountPanel() {
+        try {
+            // Get current user
+            User currentUser = environment.getAuthService().getCurrentUser()
+                .orElseThrow(() -> new LibraryException("User not logged in"));
+            
+            // Create the main panel
+            JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+            mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+            
+            // User info panel
+            JPanel infoPanel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(5, 5, 5, 15);
+            
+            // Add user info
+            gbc.gridx = 0; gbc.gridy = 0;
+            infoPanel.add(new JLabel("<html><b>Username:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(currentUser.getUsername()), gbc);
+            
+            gbc.gridx = 0; gbc.gridy = 1;
+            infoPanel.add(new JLabel("<html><b>Full Name:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(currentUser.getName()), gbc);
+            
+            gbc.gridx = 0; gbc.gridy = 2;
+            infoPanel.add(new JLabel("<html><b>Account Type:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(currentUser.isAdmin() ? "Administrator" : "Standard User"), gbc);
+            
+            gbc.gridx = 0; gbc.gridy = 3;
+            infoPanel.add(new JLabel("<html><b>Outstanding Fines:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel("$" + currentUser.getFineBalance()), gbc);  // Changed getFineAmount() to getFineBalance()
+            
+            // Create borrowed items table
+            String[] columnNames = {"Title", "Type", "Borrowed On", "Due Date", "Status"};
+            DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+            
+            // Get user's loans
+            List<Loan> userLoans = environment.getLoanRepository().findActiveByUser(currentUser.getId());
+            for (Loan loan : userLoans) {
+                Optional<Media> mediaOpt = environment.getMediaRepository().findById(loan.getMediaId());
+                if (mediaOpt.isPresent()) {
+                    Media media = mediaOpt.get();
+                    LocalDate today = environment.getDateProvider().today();
+                    String status = loan.isOverdue(today) ? "Overdue" : "On Loan";
+                    
+                    model.addRow(new Object[]{
+                        media.getTitle(),
+                        media instanceof Book ? "Book" : "CD",
+                        loan.getCheckoutDate().toString(),
+                        loan.getDueDate().toString(),
+                        status
+                    });
+                }
+            }
+            
+            JTable loansTable = new JTable(model);
+            JScrollPane scrollPane = new JScrollPane(loansTable);
+            
+            // Add components to main panel
+            mainPanel.add(infoPanel, BorderLayout.NORTH);
+            mainPanel.add(new JLabel("Borrowed Items:", JLabel.LEFT), BorderLayout.CENTER);
+            mainPanel.add(scrollPane, BorderLayout.CENTER);
+            
+            // Show in dialog
+            JDialog dialog = new JDialog(frame, "My Account", true);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.getContentPane().add(mainPanel);
+            dialog.setSize(700, 500);
+            dialog.setLocationRelativeTo(frame);
+            dialog.setVisible(true);
+            
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error loading account information: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+    /**
+     * Displays a searchable list of available media items that the user can borrow.
+     * Allows filtering by type and keyword, and processes the borrowing action.
+     */
+    private void showBorrowMediaPanel() {
+
+        // MAIN PANEL
+        JPanel borrowPanel = new JPanel(new BorderLayout(10, 10));
+        borrowPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // TITLE
+        JLabel titleLabel = new JLabel("Available Media for Borrowing", JLabel.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+
+        // -------------------------------
+        // 🔍 SEARCH BAR + TYPE FILTER
+        // -------------------------------
+        JPanel searchBar = new JPanel(new BorderLayout(5, 5));
+        JTextField searchField = new JTextField(20);
+        JComboBox<String> typeFilter = new JComboBox<>(new String[]{"All", "Books", "CDs"});
+        JButton searchButton = new JButton("Search");
+
+        searchBar.add(new JLabel("Search:"), BorderLayout.WEST);
+        searchBar.add(searchField, BorderLayout.CENTER);
+
+        JPanel rightSide = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        rightSide.add(typeFilter);
+        rightSide.add(searchButton);
+
+        searchBar.add(rightSide, BorderLayout.EAST);
+
+        // -------------------------------
+        // TABLE MODEL
+        // -------------------------------
+        String[] columnNames = {"Title", "Type", "Author/Artist", "Action"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 3; // Only Borrow button
+            }
+        };
+
+        JTable mediaTable = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(mediaTable);
+
+        // -------------------------------
+        // BUTTON RENDERER + EDITOR
+        // -------------------------------
+        mediaTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
+                if (column == 3) {
+                    JButton button = new JButton("Borrow");
+                    button.setOpaque(true);
+                    if (isSelected) {
+                        button.setBackground(table.getSelectionBackground());
+                        button.setForeground(table.getSelectionForeground());
+                    } else {
+                        button.setBackground(UIManager.getColor("Button.background"));
+                        button.setForeground(UIManager.getColor("Button.foreground"));
                     }
-                };
-                JTable resultsTable = new JTable(model);
-                resultsTable.setFillsViewportHeight(true);
-                JScrollPane scrollPane = new JScrollPane(resultsTable);
-                
-                // Add components to search panel
-                JPanel searchBarPanel = new JPanel(new BorderLayout(10, 10));
-                searchBarPanel.add(new JLabel("Search (title/author/ISBN):"), BorderLayout.WEST);
-                searchBarPanel.add(searchField, BorderLayout.CENTER);
-                searchBarPanel.add(searchButton, BorderLayout.EAST);
-                
-                searchPanel.add(searchBarPanel, BorderLayout.NORTH);
-                searchPanel.add(scrollPane, BorderLayout.CENTER);
-                
-                // Search button action
-                ActionListener searchAction = evt -> {
-                    String query = searchField.getText().trim();
+                    return button;
+                }
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+        });
+
+        mediaTable.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(new JTextField()) {
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value,
+                                                         boolean isSelected, int row, int column) {
+                JButton button = new JButton("Borrow");
+                button.addActionListener(e -> {
                     try {
-                        // Clear previous results
-                        model.setRowCount(0);
-                        
-                        // Search for media
-                        List<Media> results = environment.getCatalogService().search(query);
-                        
-                        if (results.isEmpty()) {
-                            JOptionPane.showMessageDialog(
-                                frame,
-                                "No matching media found.",
-                                "No Results",
-                                JOptionPane.INFORMATION_MESSAGE
-                            );
-                            return;
+                        String mediaTitle = (String) model.getValueAt(row, 0);
+
+                        User currentUser = environment.getAuthService().getCurrentUser()
+                            .orElseThrow(() -> new LibraryException("User not logged in"));
+
+                        Media media = environment.getMediaRepository().findAll().stream()
+                            .filter(m -> m.getTitle().equals(mediaTitle))
+                            .findFirst()
+                            .orElseThrow(() -> new LibraryException("Media not found"));
+
+                        if (!media.isAvailable()) {
+                            throw new LibraryException("This item is already borrowed");
                         }
-                        
-                        // Add results to table
-                        for (Media media : results) {
-                            if (media instanceof Book) {
-                                Book book = (Book) media;
-                                model.addRow(new Object[]{
-                                    book.getId(),
-                                    "Book",
-                                    book.getTitle(),
-                                    book.getAuthor(),
-                                    book.isAvailable() ? "Yes" : "No"
-                                });
-                            } else if (media instanceof CD) {
-                                CD cd = (CD) media;
-                                model.addRow(new Object[]{
-                                    cd.getId(),
-                                    "CD",
-                                    cd.getTitle(),
-                                    cd.getArtist(),
-                                    cd.isAvailable() ? "Yes" : "No"
-                                });
-                            }
-                        }
+
+                        String loanId = UUID.randomUUID().toString();
+                        LocalDate checkoutDate = LocalDate.now();
+                        LocalDate dueDate = checkoutDate.plusDays(28);
+
+                        Loan loan = new Loan(
+                            loanId,
+                            currentUser.getId(),
+                            media.getId(),
+                            checkoutDate,
+                            dueDate
+                        );
+
+                        environment.getLoanRepository().save(loan);
+                        media.markUnavailable();
+                        environment.getMediaRepository().save(media);
+                        currentUser.addLoan(loanId);
+                        environment.getAuthService().updateCurrentUser(currentUser);
+
+                        model.removeRow(row);
+
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "Successfully borrowed: " + mediaTitle + "\nDue Date: " + dueDate,
+                            "Borrow Successful",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(
                             frame,
-                            "Error searching media: " + ex.getMessage(),
-                            "Search Error",
+                            "Error borrowing media: " + ex.getMessage(),
+                            "Borrow Failed",
                             JOptionPane.ERROR_MESSAGE
                         );
+                    } finally {
+                        fireEditingStopped();
                     }
-                };
-                
-                // Add action listeners
-                searchButton.addActionListener(searchAction);
-                searchField.addActionListener(searchAction);
-                
-                // Show search dialog
-                JOptionPane.showOptionDialog(
-                    frame,
-                    searchPanel,
-                    "Search Media",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    new Object[]{},
-                    null
-                );
-                
+                });
+                return button;
+            }
+
+            @Override
+            public Object getCellEditorValue() {
+                return "Borrow";
+            }
+        });
+
+        // -------------------------------
+        // FILTERED LOADER FUNCTION
+        // -------------------------------
+        Runnable loadFilteredMedia = () -> {
+            model.setRowCount(0);
+
+            String searchTerm = searchField.getText().trim().toLowerCase();
+            String typeChoice = (String) typeFilter.getSelectedItem();
+
+            try {
+                Collection<Media> allMedia = environment.getMediaRepository().findAll();
+
+                for (Media media : allMedia) {
+
+                    if (!media.isAvailable()) continue;
+
+                    // TYPE FILTER
+                    if (!typeChoice.equals("All")) {
+                        if (typeChoice.equals("Books") && media.getType() != MediaType.BOOK) continue;
+                        if (typeChoice.equals("CDs") && media.getType() != MediaType.CD) continue;
+                    }
+
+                    // SEARCH FILTER
+                    String searchable = (
+                        media.getTitle() + " " +
+                        (media instanceof Book ? ((Book) media).getAuthor() : "") + " " +
+                        (media instanceof CD ? ((CD) media).getArtist() : "")
+                    ).toLowerCase();
+
+                    if (!searchable.contains(searchTerm)) continue;
+
+                    String creator = "";
+                    if (media instanceof Book) creator = ((Book) media).getAuthor();
+                    else if (media instanceof CD) creator = ((CD) media).getArtist();
+
+                    model.addRow(new Object[]{
+                        media.getTitle(),
+                        media.getType().toString(),
+                        creator,
+                        "Borrow"
+                    });
+                }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(
                     frame,
-                    "Error initializing search: " + ex.getMessage(),
+                    "Error loading media: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE
                 );
-                ex.printStackTrace(); // Print stack trace for debugging
             }
-        });
-        borrowMediaBtn.addActionListener(e -> {
+        };
+
+        // EVENTS
+        searchButton.addActionListener(e -> loadFilteredMedia.run());
+        searchField.addActionListener(e -> loadFilteredMedia.run());
+        typeFilter.addActionListener(e -> loadFilteredMedia.run());
+
+        borrowPanel.add(titleLabel, BorderLayout.NORTH);
+        borrowPanel.add(searchBar, BorderLayout.SOUTH);  
+        borrowPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JDialog dialog = new JDialog(frame, "Borrow Media", true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.getContentPane().add(borrowPanel);
+        dialog.setSize(750, 520);
+        dialog.setLocationRelativeTo(frame);
+
+        loadFilteredMedia.run(); 
+
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Displays the media search interface, allowing users to look up books and CDs.
+     * Supports keyword matching and filtering by media type.
+     */
+
+    private void showSearchMediaPanel() {
+        // Create the main panel
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Create search components
+        JPanel searchBoxPanel = new JPanel(new BorderLayout(5, 5));
+        JTextField searchField = new JTextField(30);
+        JButton searchButton = new JButton("Search");
+        JComboBox<String> searchType = new JComboBox<>(new String[]{"All", "Books", "CDs"});
+        
+        // Create results table
+        String[] columnNames = {"Title", "Type", "Author/Artist", "Status", "Action"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 4; // Only the action column is editable
+            }
+        };
+        JTable resultsTable = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(resultsTable);
+        
+        // Method to update the table based on search criteria
+        Runnable updateTable = () -> {
+            String searchTerm = searchField.getText().trim().toLowerCase();
+            String typeFilter = (String) searchType.getSelectedItem();
+            
+            // Clear existing rows
+            model.setRowCount(0);
+            
             try {
-                // Create search dialog
-                JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
-                searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                List<Media> searchResults;
+                if (searchTerm.isEmpty()) {
+                    searchResults = new ArrayList<>(environment.getMediaRepository().findAll());
+                } else {
+                    searchResults = environment.getMediaRepository().search(searchTerm);
+                }
                 
-                // Search field
-                JTextField searchField = new JTextField(30);
-                JButton searchButton = new JButton("Search");
-                
-                // Results area
-                String[] columnNames = {"ID", "Type", "Title", "Author/Artist", "Available"};
-                DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
-                    @Override
-                    public boolean isCellEditable(int row, int column) {
-                        return false; // Make table non-editable
-                    }
-                };
-                JTable resultsTable = new JTable(model);
-                resultsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-                resultsTable.setFillsViewportHeight(true);
-                JScrollPane scrollPane = new JScrollPane(resultsTable);
-                
-                // Create search bar panel
-                JPanel searchBarPanel = new JPanel(new BorderLayout(10, 10));
-                searchBarPanel.add(new JLabel("Search media to borrow:"), BorderLayout.WEST);
-                searchBarPanel.add(searchField, BorderLayout.CENTER);
-                searchBarPanel.add(searchButton, BorderLayout.EAST);
-                
-                // Create borrow button and its panel
-                JButton borrowButton = new JButton("Borrow Selected");
-                borrowButton.setEnabled(false);
-                
-                // Create button wrapper with proper alignment
-                JPanel buttonWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
-                buttonWrapper.setOpaque(false);
-                buttonWrapper.add(borrowButton);
-                
-                // Create main button panel
-                JPanel buttonPanel1 = new JPanel(new java.awt.BorderLayout());
-                buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-                buttonPanel.setOpaque(false);
-                buttonPanel.add(buttonWrapper, java.awt.BorderLayout.EAST);
-                
-                // Create bottom panel with border
-                JPanel bottomPanel = new JPanel(new BorderLayout());
-                bottomPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
-                bottomPanel.setBackground(Color.WHITE);
-                bottomPanel.add(buttonPanel, BorderLayout.EAST);
-                
-                // Add all components to search panel
-                searchPanel.add(searchBarPanel, BorderLayout.NORTH);
-                searchPanel.add(scrollPane, BorderLayout.CENTER);
-                searchPanel.add(bottomPanel, BorderLayout.SOUTH);
-                
-                // Add selection listener after button is created
-                resultsTable.getSelectionModel().addListSelectionListener(event -> {
-                    if (!event.getValueIsAdjusting()) {
-                        borrowButton.setEnabled(resultsTable.getSelectedRow() != -1);
-                    }
-                });
-                
-                // Search button action
-                ActionListener searchAction = evt -> {
-                    String query = searchField.getText().trim();
-                    try {
-                        // Clear previous results
-                        model.setRowCount(0);
-                        
-                        // Search for media
-                        List<Media> results = environment.getCatalogService().search(query);
-                        
-                        if (results.isEmpty()) {
-                            JOptionPane.showMessageDialog(
-                                frame,
-                                "No matching media found.",
-                                "No Results",
-                                JOptionPane.INFORMATION_MESSAGE
-                            );
-                            return;
+                for (Media media : searchResults) {
+                    // Apply type filter
+                    if (!"All".equals(typeFilter)) {
+                        if (typeFilter.equals("Books") && media.getType() != MediaType.BOOK) {
+                            continue;
                         }
-                        
-                        // Add results to table
-                        for (Media media : results) {
-                            if (media instanceof Book) {
-                                Book book = (Book) media;
-                                model.addRow(new Object[]{
-                                    book.getId(),
-                                    "Book",
-                                    book.getTitle(),
-                                    book.getAuthor(),
-                                    book.isAvailable() ? "Yes" : "No"
-                                });
-                            } else if (media instanceof CD) {
-                                CD cd = (CD) media;
-                                model.addRow(new Object[]{
-                                    cd.getId(),
-                                    "CD",
-                                    cd.getTitle(),
-                                    cd.getArtist(),
-                                    cd.isAvailable() ? "Yes" : "No"
-                                });
-                            }
-                        }
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(
-                            frame,
-                            "Error searching media: " + ex.getMessage(),
-                            "Search Error",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
-                };
-                
-                // Borrow button action
-                borrowButton.addActionListener(borrowEvt -> {
-                    int selectedRow = resultsTable.getSelectedRow();
-                    if (selectedRow >= 0) {
-                        String mediaId = (String) model.getValueAt(selectedRow, 0);
-                        String mediaType = (String) model.getValueAt(selectedRow, 1);
-                        String mediaTitle = (String) model.getValueAt(selectedRow, 2);
-                        
-                        try {
-                            // Get current user
-                            User currentUser = environment.getAuthService().getCurrentUser()
-                                .orElseThrow(() -> new LibraryException("User not logged in"));
-                            
-                            // Borrow the media
-                            Loan loan = environment.getBorrowService().borrow(currentUser.getId(), mediaId);
-                            
-                            // Show success message with due date
-                            String message = String.format(
-                                "Successfully borrowed %s: %s\nDue Date: %s",
-                                mediaType, mediaTitle, loan.getDueDate()
-                            );
-                            
-                            JOptionPane.showMessageDialog(
-                                frame,
-                                message,
-                                "Borrow Successful",
-                                JOptionPane.INFORMATION_MESSAGE
-                            );
-                            
-                            // Refresh the search results
-                            searchAction.actionPerformed(null);
-                            
-                        } catch (LibraryException ex) {
-                            JOptionPane.showMessageDialog(
-                                frame,
-                                "Cannot borrow media: " + ex.getMessage(),
-                                "Borrow Failed",
-                                JOptionPane.ERROR_MESSAGE
-                            );
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(
-                                frame,
-                                "Error borrowing media: " + ex.getMessage(),
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE
-                            );
+                        if (typeFilter.equals("CDs") && media.getType() != MediaType.CD) {
+                            continue;
                         }
                     }
-                });
-                
-                // Add action listeners
-                searchButton.addActionListener(searchAction);
-                searchField.addActionListener(searchAction);
-                
-                // Show search dialog
-                JOptionPane.showOptionDialog(
-                    frame,
-                    searchPanel,
-                    "Borrow Media",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    new Object[]{},
-                    null
-                );
+                    
+                    String creator = "";
+                    if (media instanceof Book) {
+                        creator = ((Book) media).getAuthor();
+                    } else if (media instanceof CD) {
+                        creator = ((CD) media).getArtist();
+                    }
+                    
+                    model.addRow(new Object[]{
+                        media.getTitle(),
+                        media.getType().toString(),
+                        creator,
+                        media.isAvailable() ? "Available" : "Borrowed",
+                        media.isAvailable() ? "Borrow" : "N/A"
+                    });
+                }
                 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(
                     frame,
-                    "Error initializing borrow media: " + ex.getMessage(),
+                    "Error loading media: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE
                 );
                 ex.printStackTrace();
             }
-        });
-        returnMediaBtn.addActionListener(e -> showMessage("Opening Return Media"));
-        payFineBtn.addActionListener(e -> handlePayFine());
-        myProfileBtn.addActionListener(e -> showMessage("Opening Profile"));
-        contactBtn.addActionListener(e -> {
-            // Create a panel to hold contact information
-            JPanel contactPanel = new JPanel(new GridBagLayout());
-            contactPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-            
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.anchor = GridBagConstraints.WEST;
-            gbc.insets = new Insets(5, 5, 5, 5);
-            
-            // Add contact information with icons
-            JLabel titleLabel1 = new JLabel("Contact Information");
-            titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gbc.gridwidth = 2;
-            gbc.insets = new Insets(0, 0, 15, 0);
-            contactPanel.add(titleLabel, gbc);
-            
-            // Reset insets
-            gbc.insets = new Insets(5, 5, 5, 5);
-            
-            // Email
-            gbc.gridy++;
-            gbc.gridx = 0;
-            gbc.gridwidth = 1;
-            contactPanel.add(new JLabel("📧"), gbc);
-            
-            gbc.gridx = 1;
-            contactPanel.add(new JLabel("Email: support@librarysystem.com"), gbc);
-            
-            // Phone
-            gbc.gridy++;
-            gbc.gridx = 0;
-            contactPanel.add(new JLabel("📞"), gbc);
-            
-            gbc.gridx = 1;
-            contactPanel.add(new JLabel("Phone: +1 (555) 123-4567"), gbc);
-            
-            // Address
-            gbc.gridy++;
-            gbc.gridx = 0;
-            contactPanel.add(new JLabel("🏢"), gbc);
-            
-            gbc.gridx = 1;
-            contactPanel.add(new JLabel("<html>123 Library Lane<br>Bookville, BV 12345</html>"), gbc);
-            
-            // Hours
-            gbc.gridy++;
-            gbc.gridx = 0;
-            contactPanel.add(new JLabel("🕒"), gbc);
-            
-            gbc.gridx = 1;
-            contactPanel.add(new JLabel("<html>Hours:<br>Mon-Fri: 9:00 AM - 8:00 PM<br>Sat-Sun: 10:00 AM - 6:00 PM</html>"), gbc);
-            
-            // Show the contact information in a dialog
-            JOptionPane.showMessageDialog(
-                frame,
-                contactPanel,
-                "Contact Us",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        });
-        
-        // Add buttons to panel
-        buttonsPanel.add(searchBooksBtn);
-        buttonsPanel.add(borrowMediaBtn);
-        buttonsPanel.add(returnMediaBtn);
-        buttonsPanel.add(payFineBtn);
-        buttonsPanel.add(myProfileBtn);
-        buttonsPanel.add(contactBtn);
-        
-        // Add components to content panel
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
-        contentPanel.add(buttonsPanel, BorderLayout.CENTER);
-        
-        // Add header and content to main panel
-        currentPanel.add(headerPanel, BorderLayout.NORTH);
-        currentPanel.add(contentPanel, BorderLayout.CENTER);
-        
-        // Add main panel to frame
-        frame.add(currentPanel);
-        
-        // Refresh the frame
-        frame.revalidate();
-        frame.repaint();
-    }
-    
-    private void showAdminDashboard(String username) {
-        // Clear the current panel
-        frame.remove(currentPanel);
-        
-        // Create main panel with border layout
-        currentPanel = new JPanel(new BorderLayout());
-        currentPanel.setBackground(Color.WHITE);
-        
-        // Create header panel
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(128, 0, 128)); // Purple color for admin
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
-        // Add welcome message
-        JLabel welcomeLabel = new JLabel("Admin Panel - Welcome, " + username);
-        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        welcomeLabel.setForeground(Color.WHITE);
-        headerPanel.add(welcomeLabel, BorderLayout.WEST);
-        
-        // Add logout button
-        JButton logoutButton = new JButton("Logout");
-        styleButton(logoutButton, new Color(178, 34, 34), Color.WHITE);
-        logoutButton.addActionListener(e -> showLoginPanel());
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
-        buttonPanel.add(logoutButton);
-        headerPanel.add(buttonPanel, BorderLayout.EAST);
-        
-        // Create content panel with card layout for different views
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
-        // Create main dashboard title
-        JLabel titleLabel = new JLabel("System Admin Dashboard", JLabel.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(75, 0, 130));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
-        
-        // Create buttons panel with grid layout
-        JPanel buttonsPanel = new JPanel(new GridLayout(3, 2, 20, 20));
-        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
-        buttonsPanel.setOpaque(false);
-        
-        // Create and add admin buttons
-        JButton addBookBtn = createDashboardButton("Add Book", "📚");
-        JButton addCDBtn = createDashboardButton("Add CD", "💿");
-        JButton sendRemindersBtn = createDashboardButton("Send Reminders", "✉️");
-        JButton overdueReportBtn = createDashboardButton("Show Overdue Report", "📊");
-        JButton listUsersBtn = createDashboardButton("List All Users", "👥");
-        JButton unregisterUserBtn = createDashboardButton("Unregister User", "❌");
-        
-        // Add action listeners for admin buttons
-        addBookBtn.addActionListener(e -> showAddBookForm(username));
-        addCDBtn.addActionListener(e -> showAddCDForm(username));
-        sendRemindersBtn.addActionListener(e -> {
-            try {
-                // Send reminders to all users with overdue books
-                List<User> notifiedUsers = environment.getReminderService().sendDailyReminders();
-                
-                // Get the sent messages from the email notifier
-                List<String> sentMessages = environment.getEmailNotifier().getSentMessages();
-                
-                // Build the result message
-                StringBuilder message = new StringBuilder();
-                message.append("Reminders sent to ").append(notifiedUsers.size()).append(" user(s).\n\n");
-                
-                if (!sentMessages.isEmpty()) {
-                    message.append("Messages sent:\n");
-                    for (String msg : sentMessages) {
-                        message.append("- ").append(msg).append("\n");
-                    }
-                } else {
-                    message.append("No overdue books found to send reminders for.");
-                }
-                
-                // Show the results
-                JOptionPane.showMessageDialog(
-                    frame,
-                    message.toString(),
-                    "Reminders Sent",
-                    JOptionPane.INFORMATION_MESSAGE
-                );
-                
-                // Clear the sent messages for the next time
-                environment.getEmailNotifier().clear();
-                
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                    frame,
-                    "Error sending reminders: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-        overdueReportBtn.addActionListener(e -> showMessage("Generating Overdue Report..."));
-        listUsersBtn.addActionListener(e -> {
-            try {
-                // Get all users
-                java.util.Collection<User> users = environment.getUserService().listAllUsers();
-                
-                if (users.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                        frame,
-                        "No users found in the system.",
-                        "No Users",
-                        JOptionPane.INFORMATION_MESSAGE
-                    );
-                    return;
-                }
-
-                // Create a formatted string with user details
-                StringBuilder userList = new StringBuilder("<html><body style='width: 300px;'>");
-                userList.append("<h3>All Registered Users</h3>");
-                userList.append("<table border='1' cellpadding='5' style='border-collapse: collapse; width: 100%;'>");
-                userList.append("<tr><th>Name</th><th>ID</th><th>Role</th></tr>");
-                
-                for (User user : users) {
-                    userList.append(String.format(
-                        "<tr><td>%s</td><td>%s</td><td>%s</td></tr>",
-                        user.getName(),
-                        user.getId(),
-                        user.getRole()
-                    ));
-                }
-                
-                userList.append("</table></body></html>");
-                
-                // Create a scrollable panel for the user list
-                JTextPane textPane = new JTextPane();
-                textPane.setContentType("text/html");
-                textPane.setText(userList.toString());
-                textPane.setEditable(false);
-                textPane.setCaretPosition(0);
-                
-                JScrollPane scrollPane = new JScrollPane(textPane);
-                scrollPane.setPreferredSize(new Dimension(500, 300));
-                
-                // Show the user list in a dialog
-                JOptionPane.showMessageDialog(
-                    frame,
-                    scrollPane,
-                    "All Registered Users",
-                    JOptionPane.PLAIN_MESSAGE
-                );
-                
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                    frame,
-                    "Error retrieving user list: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-        unregisterUserBtn.addActionListener(e -> {
-            try {
-                // Get the list of users
-                java.util.Collection<User> users = environment.getUserService().listAllUsers();
-                
-                // Create an array of user display strings for the dropdown
-                String[] userOptions = users.stream()
-                    .map(user -> String.format("%s (ID: %s, Role: %s)", 
-                        user.getName(), user.getId(), user.getRole()))
-                    .toArray(String[]::new);
-                
-                if (userOptions.length == 0) {
-                    JOptionPane.showMessageDialog(
-                        frame,
-                        "No users found in the system.",
-                        "No Users",
-                        JOptionPane.INFORMATION_MESSAGE
-                    );
-                    return;
-                }
-                
-                // Show user selection dialog
-                String selectedUser = (String) JOptionPane.showInputDialog(
-                    frame,
-                    "Select a user to unregister:",
-                    "Unregister User",
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    userOptions,
-                    userOptions[0]
-                );
-                
-                if (selectedUser == null) {
-                    return; // User cancelled
-                }
-                
-                // Extract user ID from the selection
-                String userId = selectedUser.substring(
-                    selectedUser.indexOf("ID:") + 4,
-                    selectedUser.indexOf(", Role:")
-                ).trim();
-                
-                // Confirm unregistration
-                int confirm = JOptionPane.showConfirmDialog(
-                    frame,
-                    "Are you sure you want to unregister this user? This action cannot be undone.",
-                    "Confirm Unregistration",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-                );
-                
-                if (confirm == JOptionPane.YES_OPTION) {
-                    try {
-                        environment.getUserService().unregister(userId);
-                        JOptionPane.showMessageDialog(
-                            frame,
-                            "User successfully unregistered.",
-                            "Success",
-                            JOptionPane.INFORMATION_MESSAGE
-                        );
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(
-                            frame,
-                            "Error unregistering user: " + ex.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                    frame,
-                    "An error occurred: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-        
-        // Add buttons to panel
-        buttonsPanel.add(addBookBtn);
-        buttonsPanel.add(addCDBtn);
-        buttonsPanel.add(sendRemindersBtn);
-        buttonsPanel.add(overdueReportBtn);
-        buttonsPanel.add(listUsersBtn);
-        buttonsPanel.add(unregisterUserBtn);
-        
-        // Add components to content panel
-        contentPanel.add(titleLabel, BorderLayout.NORTH);
-        contentPanel.add(buttonsPanel, BorderLayout.CENTER);
-        
-        // Add header and content to main panel
-        currentPanel.add(headerPanel, BorderLayout.NORTH);
-        currentPanel.add(contentPanel, BorderLayout.CENTER);
-        
-        // Add main panel to frame
-        frame.add(currentPanel);
-        
-        // Add keyboard shortcut for logout (Ctrl+L)
-        Action logoutAction = new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showLoginPanel();
-            }
         };
         
-        // Bind Ctrl+L to logout
-        KeyStroke logoutKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK);
-        currentPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(logoutKeyStroke, "logout");
-        currentPanel.getActionMap().put("logout", logoutAction);
+        searchButton.addActionListener(e -> updateTable.run());
         
-        // Refresh the frame
-        frame.revalidate();
-        frame.repaint();
+        searchField.addActionListener(e -> updateTable.run());
+        
+        searchType.addActionListener(e -> updateTable.run());
+        
+        searchBoxPanel.add(new JLabel("Search:"), BorderLayout.WEST);
+        searchBoxPanel.add(searchField, BorderLayout.CENTER);
+        searchBoxPanel.add(searchType, BorderLayout.EAST);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(searchButton);
+        
+        searchPanel.add(searchBoxPanel, BorderLayout.NORTH);
+        searchPanel.add(buttonPanel, BorderLayout.SOUTH);
+        searchPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        JDialog dialog = new JDialog(frame, "Search Media", true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.getContentPane().add(searchPanel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(frame);
+        
+        updateTable.run();
+        
+        dialog.setVisible(true);
     }
-    
-    private void showAddCDForm(String username) {
-        // Create the main panel with border layout
-        JPanel addCDPanel = new JPanel(new BorderLayout());
-        addCDPanel.setBackground(Color.WHITE);
-        
-        // Create header panel
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(0, 102, 204)); // Blue color for CD form
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
-        // Add back button to header
-        JButton backButton = new JButton("Back to Admin Dashboard");
-        styleButton(backButton, new Color(0, 102, 204), Color.WHITE);
-        backButton.setBorderPainted(false);
-        backButton.addActionListener(e -> showAdminDashboard(username));
-        
-        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        backButtonPanel.setOpaque(false);
-        backButtonPanel.add(backButton);
-        headerPanel.add(backButtonPanel, BorderLayout.WEST);
-        
-        // Add title
-        JLabel titleLabel = new JLabel("Add New CD", JLabel.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        
-        // Create form panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(30, 100, 30, 100));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.CENTER;
-        
-        // Title
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(10, 0, 5, 10);
-        JLabel titleLabel1 = new JLabel("TITLE");
-        titleLabel1.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        titleLabel1.setForeground(new Color(52, 73, 94));
-        formPanel.add(titleLabel1, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        JTextField titleField = new JTextField(20);
-        styleTextField(titleField);
-        formPanel.add(titleField, gbc);
-        
-        // Artist
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(15, 0, 5, 10);
-        JLabel artistLabel = new JLabel("ARTIST");
-        artistLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        artistLabel.setForeground(new Color(52, 73, 94));
-        formPanel.add(artistLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        JTextField artistField = new JTextField(20);
-        styleTextField(artistField);
-        formPanel.add(artistField, gbc);
-        
-        // Buttons Panel
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        buttonsPanel.setOpaque(false);
-        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        
-        // Cancel Button
-        JButton cancelButton = new JButton("CANCEL");
-        styleButton(cancelButton, new Color(149, 165, 166), Color.WHITE);
-        cancelButton.addActionListener(e -> showAdminDashboard(username));
-        buttonsPanel.add(cancelButton);
-        
-        // Add CD Button
-        JButton addCDButton = new JButton("ADD CD");
-        styleButton(addCDButton, new Color(46, 204, 113), Color.WHITE);
-        addCDButton.addActionListener(e -> {
-            String title = titleField.getText().trim();
-            String artist = artistField.getText().trim();
+
+	/**
+     * Displays a dialog for paying fines
+     * @return Always returns null
+     */
+    private Object showPayFineDialog() {
+        try {
+            User currentUser = environment.getAuthService().getCurrentUser()
+                .orElseThrow(() -> new LibraryException("User not logged in"));
             
-            // Validate inputs
-            if (title.isEmpty() || artist.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Please fill in all fields.", 
-                    "Incomplete Information", 
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            // Get current fine amount
+            BigDecimal currentFine = currentUser.getFineAmount();
             
-            try {
-                // Create and save the new CD using CatalogService
-                environment.getCatalogService().addCd(title, artist);
-                
-                // Show success message
-                JOptionPane.showMessageDialog(frame, 
-                    "CD added successfully!\nTitle: " + title + "\nArtist: " + artist, 
-                    "Success", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Clear fields
-                titleField.setText("");
-                artistField.setText("");
-                
-                // Return to admin dashboard
-                showAdminDashboard(username);
-                
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Error adding CD: " + ex.getMessage(), 
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
+            if (currentFine.compareTo(BigDecimal.ZERO) <= 0) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "You don't have any outstanding fines!",
+                    "No Fines",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                return null;
             }
-        });
-        buttonsPanel.add(addCDButton);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 0, 0, 0);
-        formPanel.add(buttonsPanel, gbc);
-        
-        // Add components to main panel
-        addCDPanel.add(headerPanel, BorderLayout.NORTH);
-        addCDPanel.add(formPanel, BorderLayout.CENTER);
-        
-        // Update the current panel
-        frame.remove(currentPanel);
-        currentPanel = addCDPanel;
-        frame.add(currentPanel);
-        frame.revalidate();
-        frame.repaint();
-    }
-    
-    private void showAddBookForm(String username) {
-        // Create the main panel with border layout
-        JPanel addBookPanel = new JPanel(new BorderLayout());
-        addBookPanel.setBackground(Color.WHITE);
-        
-        // Create header panel
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(128, 0, 128));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
-        // Add back button to header
-        JButton backButton = new JButton("Back to Admin Dashboard");
-        styleButton(backButton, new Color(128, 0, 128), Color.WHITE);
-        backButton.setBorderPainted(false);
-        backButton.addActionListener(e -> showAdminDashboard(username));
-        
-        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        backButtonPanel.setOpaque(false);
-        backButtonPanel.add(backButton);
-        headerPanel.add(backButtonPanel, BorderLayout.WEST);
-        
-        // Add title
-        JLabel titleLabel = new JLabel("Add New Book", JLabel.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        
-        // Create form panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(30, 100, 30, 100));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.CENTER;
-        
-        // Title
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(10, 0, 5, 10);
-        JLabel titleLabel1 = new JLabel("TITLE");
-        titleLabel1.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        titleLabel1.setForeground(new Color(52, 73, 94));
-        formPanel.add(titleLabel1, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        JTextField titleField = new JTextField(20);
-        styleTextField(titleField);
-        formPanel.add(titleField, gbc);
-        
-        // Author
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(15, 0, 5, 10);
-        JLabel authorLabel = new JLabel("AUTHOR");
-        authorLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        authorLabel.setForeground(new Color(52, 73, 94));
-        formPanel.add(authorLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        JTextField authorField = new JTextField(20);
-        styleTextField(authorField);
-        formPanel.add(authorField, gbc);
-        
-        // ISBN
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        JLabel isbnLabel = new JLabel("ISBN");
-        isbnLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        isbnLabel.setForeground(new Color(52, 73, 94));
-        formPanel.add(isbnLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        JTextField isbnField = new JTextField(20);
-        styleTextField(isbnField);
-        formPanel.add(isbnField, gbc);
-        
-        // Buttons Panel
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        buttonsPanel.setOpaque(false);
-        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        
-        // Cancel Button
-        JButton cancelButton = new JButton("CANCEL");
-        styleButton(cancelButton, new Color(149, 165, 166), Color.WHITE);
-        cancelButton.addActionListener(e -> showAdminDashboard(username));
-        buttonsPanel.add(cancelButton);
-        
-        // Add Book Button
-        JButton addBookButton = new JButton("ADD BOOK");
-        styleButton(addBookButton, new Color(46, 204, 113), Color.WHITE);
-        addBookButton.addActionListener(e -> {
-            String title = titleField.getText().trim();
-            String author = authorField.getText().trim();
-            String isbn = isbnField.getText().trim();
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.anchor = GridBagConstraints.WEST;
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            panel.add(new JLabel("Current Fine Amount:"), gbc);
             
-            // Validate inputs
-            if (title.isEmpty() || author.isEmpty() || isbn.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Please fill in all fields.", 
-                    "Incomplete Information", 
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            gbc.gridx = 1;
+            JLabel fineLabel = new JLabel("$" + currentFine);
+            fineLabel.setFont(fineLabel.getFont().deriveFont(Font.BOLD));
+            panel.add(fineLabel, gbc);
+
+            // Payment amount
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            panel.add(new JLabel("Payment Amount ($):"), gbc);
             
-            try {
-                // Generate a unique ID for the new book
-                String id = "BK" + System.currentTimeMillis();
-                
-                // Create and save the new book using CatalogService
-                Book newBook = environment.getCatalogService().addBook(title, author, isbn);
-                
-                // Show success message
-                JOptionPane.showMessageDialog(frame, 
-                    "Book added successfully!\nID: " + id + "\nTitle: " + title, 
-                    "Success", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Clear fields
-                titleField.setText("");
-                authorField.setText("");
-                isbnField.setText("");
-                
-                // Return to admin dashboard
-                showAdminDashboard(username);
-                
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Error adding book: " + ex.getMessage(), 
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
+            gbc.gridx = 1;
+            JFormattedTextField amountField = new JFormattedTextField(NumberFormat.getNumberInstance());
+            amountField.setColumns(10);
+            amountField.setValue(currentFine); 
+            panel.add(amountField, gbc);
+
+         
+            int result = JOptionPane.showConfirmDialog(
+                frame,
+                panel,
+                "Pay Fine",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    BigDecimal paymentAmount = new BigDecimal(amountField.getText().trim());
+                    
+                    if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new NumberFormatException("Payment amount must be greater than zero");
+                    }
+                    
+                    if (paymentAmount.compareTo(currentFine) > 0) {
+                        throw new NumberFormatException("Payment amount cannot exceed the current fine");
+                    }
+                    
+                    
+                    BigDecimal newFineAmount = currentFine.subtract(paymentAmount);
+                    currentUser.setFineAmount(newFineAmount);
+                    
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Payment of $" + paymentAmount + " processed successfully!",
+                        "Payment Successful",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                    
+                    showMainDashboard(currentUser.getUsername(), currentUser.isAdmin());
+                    
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Invalid payment amount: " + ex.getMessage(),
+                        "Invalid Amount",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Error processing payment: " + ex.getMessage(),
+                        "Payment Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
-        });
-        buttonsPanel.add(addBookButton);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 0, 0, 0);
-        formPanel.add(buttonsPanel, gbc);
-        
-        // Add components to main panel
-        addBookPanel.add(headerPanel, BorderLayout.NORTH);
-        addBookPanel.add(formPanel, BorderLayout.CENTER);
-        
-        // Update the current panel
-        frame.remove(currentPanel);
-        currentPanel = addBookPanel;
-        frame.add(currentPanel);
-        frame.revalidate();
-        frame.repaint();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        return null;
     }
-    
-    private JButton createDashboardButton(String text, String emoji) {
-        JButton button = new JButton("<html><div style='text-align:center;'>" + 
-            "<div style='font-size:24px;'>" + emoji + "</div>" +
-            "<div>" + text + "</div></html>");
-        button.setFont(new Font("Arial", Font.PLAIN, 16));
-        button.setBackground(new Color(240, 240, 245));
-        button.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(200, 120));
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(230, 230, 245));
+
+	/**
+     * Displays a contact information dialog to the user
+     * @return Always returns null
+     */
+    private Object showContactUsDialog() {
+        String message = "<html><div style='width: 300px;'>" +
+            "<h2 style='color: #3498db; margin-top: 0;'>Contact Library Support</h2>" +
+            "<p style='margin-bottom: 5px;'><b>Email:</b> support@library.com</p>" +
+            "<p style='margin-bottom: 5px;'><b>Phone:</b> (123) 456-7890</p>" +
+            "<p style='margin-bottom: 5px;'><b>Address:</b> 123 Library St, Bookville, 12345</p>" +
+            "<hr style='margin: 15px 0;'>" +
+            "<p><b>Support Hours:</b><br>" +
+            "Monday - Friday: 9:00 AM - 6:00 PM<br>" +
+            "Saturday: 10:00 AM - 4:00 PM<br>" +
+            "Sunday: Closed</p>" +
+            "<hr style='margin: 15px 0;'>" +
+            "<p>For immediate assistance, please call our support line during business hours.</p>" +
+            "</div></html>";
+
+        // Create and customize the JOptionPane
+        JLabel iconLabel = new JLabel();
+        try {
+            // Try to load a custom icon
+            ImageIcon icon = new ImageIcon(getClass().getResource("/images/contact-icon.png"));
+            if (icon.getImage() != null) {
+                // Resize the icon if needed
+                Image image = icon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+                iconLabel.setIcon(new ImageIcon(image));
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(240, 240, 245));
-            }
-        });
-        return button;
+        } catch (Exception e) {
+            iconLabel.setIcon(UIManager.getIcon("OptionPane.informationIcon"));
+        }
+
+        JOptionPane.showMessageDialog(
+            frame,                               
+            new Object[] {iconLabel, message},     
+            "Contact Us",                          
+            JOptionPane.INFORMATION_MESSAGE         
+        );
+
+        return null;  // Return value not used
     }
-    
-    private void showSignUpPanel() {
-        // Clear the current panel
-        frame.remove(currentPanel);
-        
-        // Create main panel with border layout
-        currentPanel = new JPanel(new BorderLayout());
-        currentPanel.setBackground(Color.WHITE);
-        
-        // Create header panel
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(52, 152, 219));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
-        // Add back button to header
-        JButton backButton = new JButton("Back to Login");
-        styleButton(backButton, new Color(52, 152, 219), Color.WHITE);
-        backButton.setBorderPainted(false);
-        backButton.addActionListener(e -> showLoginPanel());
-        
-        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        backButtonPanel.setOpaque(false);
-        backButtonPanel.add(backButton);
-        headerPanel.add(backButtonPanel, BorderLayout.WEST);
-        
-        // Add title
-        JLabel titleLabel = new JLabel("Create New Account", JLabel.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        
-        // Create the sign up form panel
-        JPanel signUpFormPanel = createSignUpFormPanel();
-        
-        // Add header and form to main panel
-        currentPanel.add(headerPanel, BorderLayout.NORTH);
-        currentPanel.add(signUpFormPanel, BorderLayout.CENTER);
-        
-        // Add main panel to frame
-        frame.add(currentPanel);
-        
-        // Refresh the frame
-        frame.revalidate();
-        frame.repaint();
-    }
-    
-    private JPanel createSignUpFormPanel() {
+    /**
+     * Displays the sign-up panel allowing new users to create an account.
+     * Validates inputs before submitting registration.
+     */
+
+	private void showSignUpPanel() {
         JPanel signUpPanel = new JPanel(new GridBagLayout());
         signUpPanel.setBackground(Color.WHITE);
-        signUpPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 40, 40));
-        
+        signUpPanel.setBorder(BorderFactory.createEmptyBorder(30, 60, 40, 60));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.CENTER;
-        
+
         // Title
         JLabel titleLabel = new JLabel("Create New Account");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(44, 62, 80));
-        titleLabel.setHorizontalAlignment(JLabel.CENTER);
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 0, 30, 0);
         signUpPanel.add(titleLabel, gbc);
-        
-        // Full Name
+
+        // Username
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
-        gbc.insets = new Insets(10, 0, 5, 10);
-        JLabel nameLabel = new JLabel("FULL NAME");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        nameLabel.setForeground(new Color(52, 73, 94));
-        signUpPanel.add(nameLabel, gbc);
-        
-        gbc.gridy = 2;
-        JTextField nameField = new JTextField(20);
-        styleTextField(nameField);
-        signUpPanel.add(nameField, gbc);
-        
-        // Username
-        gbc.gridy = 3;
-        gbc.insets = new Insets(15, 0, 5, 10);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        gbc.insets = new Insets(10, 0, 5, 0);
         JLabel userLabel = new JLabel("USERNAME");
         userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         userLabel.setForeground(new Color(52, 73, 94));
         signUpPanel.add(userLabel, gbc);
-        
-        gbc.gridy = 4;
+
         JTextField newUsernameField = new JTextField(20);
         styleTextField(newUsernameField);
+        gbc.gridy = 2;
         signUpPanel.add(newUsernameField, gbc);
-        
+
+        // Name
+        gbc.gridy = 3;
+        gbc.insets = new Insets(20, 0, 5, 0);
+        JLabel nameLabel = new JLabel("FULL NAME");
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        nameLabel.setForeground(new Color(52, 73, 94));
+        signUpPanel.add(nameLabel, gbc);
+
+        JTextField nameField = new JTextField(20);
+        styleTextField(nameField);
+        gbc.gridy = 4;
+        signUpPanel.add(nameField, gbc);
+
         // Password
         gbc.gridy = 5;
+        gbc.insets = new Insets(20, 0, 5, 0);
         JLabel passLabel = new JLabel("PASSWORD");
         passLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         passLabel.setForeground(new Color(52, 73, 94));
         signUpPanel.add(passLabel, gbc);
-        
-        gbc.gridy = 6;
+
         JPasswordField newPasswordField = new JPasswordField(20);
         stylePasswordField(newPasswordField);
+        gbc.gridy = 6;
         signUpPanel.add(newPasswordField, gbc);
-        
+
         // Confirm Password
         gbc.gridy = 7;
+        gbc.insets = new Insets(20, 0, 5, 0);
         JLabel confirmPassLabel = new JLabel("CONFIRM PASSWORD");
         confirmPassLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         confirmPassLabel.setForeground(new Color(52, 73, 94));
         signUpPanel.add(confirmPassLabel, gbc);
-        
-        gbc.gridy = 8;
+
         JPasswordField confirmPasswordField = new JPasswordField(20);
         stylePasswordField(confirmPasswordField);
+        gbc.gridy = 8;
         signUpPanel.add(confirmPasswordField, gbc);
-        
-        // Buttons Panel
-        JPanel buttonsPanel = new JPanel(new GridLayout(1, 2, 15, 0));
-        buttonsPanel.setOpaque(false);
-        buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        
-        // Back Button
-        JButton backButton = new JButton("BACK");
-        styleButton(backButton, new Color(149, 165, 166), Color.WHITE);
-        backButton.addActionListener(e -> showLoginPanel());
-        buttonsPanel.add(backButton);
-        
-        // Create Account Button
-        JButton createAccountButton = new JButton("CREATE ACCOUNT");
-        styleButton(createAccountButton, new Color(46, 204, 113), Color.WHITE);
-        createAccountButton.addActionListener(e -> {
-            String fullName = nameField.getText().trim();
+
+        // Sign Up Button
+        gbc.gridy = 9;
+        gbc.insets = new Insets(30, 0, 10, 0);
+        JButton signUpButton = new JButton("CREATE ACCOUNT");
+        styleButton(signUpButton, new Color(46, 204, 113), Color.WHITE);
+        signUpButton.addActionListener(e -> {
             String username = newUsernameField.getText().trim();
+            String name = nameField.getText().trim();
             String password = new String(newPasswordField.getPassword());
             String confirmPassword = new String(confirmPasswordField.getPassword());
-            
-            // Validate inputs
-            if (fullName.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Please fill in all fields.", 
-                    "Incomplete Information", 
-                    JOptionPane.WARNING_MESSAGE);
+
+            if (username.isEmpty() || name.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Please fill in all fields.",
+                    "Incomplete Information",
+                    JOptionPane.WARNING_MESSAGE
+                );
                 return;
             }
-            
+
             if (!password.equals(confirmPassword)) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Passwords do not match.", 
-                    "Password Mismatch", 
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Passwords do not match.",
+                    "Password Mismatch",
+                    JOptionPane.ERROR_MESSAGE
+                );
                 return;
             }
-            
+
             try {
-                // Create a new member user
-                environment.getUserService().registerMember(username, fullName, password);
-                
-                // Clear fields
-                nameField.setText("");
-                newUsernameField.setText("");
-                newPasswordField.setText("");
-                confirmPasswordField.setText("");
-                
-                // Show success message and return to login
-                JOptionPane.showMessageDialog(frame, 
-                    "Account created successfully! Please log in with your new credentials.", 
-                    "Account Created", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
+                environment.getAuthService().register(username, name, password);
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Account created successfully! Please log in.",
+                    "Registration Successful",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
                 showLoginPanel();
-                
-            } catch (LibraryException ex) {
-                JOptionPane.showMessageDialog(frame, 
-                    "Error creating account: " + ex.getMessage(), 
-                    "Registration Failed", 
-                    JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "Error creating account: " + ex.getMessage(),
+                    "Registration Failed",
+                    JOptionPane.ERROR_MESSAGE
+                );
             }
         });
-        buttonsPanel.add(createAccountButton);
-        
-        gbc.gridy = 9;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 0, 0, 0);
-        signUpPanel.add(buttonsPanel, gbc);
-        
-        return signUpPanel;
+        signUpPanel.add(signUpButton, gbc);
+
+        // Back to Login Button
+        gbc.gridy = 10;
+        gbc.insets = new Insets(10, 0, 0, 0);
+        JButton backButton = new JButton("Back to Login");
+        styleButton(backButton, new Color(149, 165, 166), Color.WHITE);
+        backButton.addActionListener(e -> showLoginPanel());
+        signUpPanel.add(backButton, gbc);
+
+        // Clear the current panel and add the sign-up panel
+        frame.remove(currentPanel);
+        currentPanel = new JPanel(new BorderLayout());
+        currentPanel.add(signUpPanel, BorderLayout.CENTER);
+        frame.add(currentPanel);
+        frame.revalidate();
+        frame.repaint();
     }
-    
-    private void handlePayFine() {
+
+    private void showReturnMediaPanel() {
         try {
-            // Get current user
-            User currentUser = environment.getAuthService().getCurrentUser()
-                .orElseThrow(() -> new LibraryException("You must be logged in to pay fines"));
-            
-            // Get current fine balance
-            BigDecimal currentBalance = currentUser.getFineBalance();
-            
-            if (currentBalance.signum() <= 0) {
+            // Get current user ID
+            String currentUserId = environment.getAuthService().getCurrentUser()
+                .orElseThrow(() -> new LibraryException("User not logged in"))
+                .getId();
+
+            // Get loan repository and find active loans
+            LoanRepository loanRepo = environment.getLoanRepository();
+            List<Loan> activeLoans = loanRepo.findActiveByUser(currentUserId);
+
+            if (activeLoans.isEmpty()) {
                 JOptionPane.showMessageDialog(
                     frame,
-                    "You don't have any outstanding fines to pay.",
-                    "No Outstanding Fines",
+                    "You don't have any items to return.",
+                    "No Items to Return",
                     JOptionPane.INFORMATION_MESSAGE
                 );
                 return;
             }
-            
-            // Create input dialog for payment amount
-            String amountStr = JOptionPane.showInputDialog(
-                frame,
-                String.format("Your current fine balance is: $%.2f%nEnter amount to pay:", currentBalance),
-                "Pay Fine",
-                JOptionPane.PLAIN_MESSAGE
-            );
-            
-            // If user cancelled the dialog
-            if (amountStr == null) {
-                return;
+
+            // Create the main panel
+            JPanel mainPanel = new JPanel(new BorderLayout());
+            mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            mainPanel.setPreferredSize(new Dimension(800, 400));
+
+            // Create table model
+            String[] columnNames = {"Title", "Type", "Borrowed On", "Due Date", "Status", "Action"};
+            DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return column == 5; // Only the action column is editable
+                }
+
+                @Override
+                public Class<?> getColumnClass(int columnIndex) {
+                    if (columnIndex == 5) return JButton.class;
+                    return String.class;
+                }
+            };
+
+            // Populate table with loan data
+            MediaRepository mediaRepo = environment.getMediaRepository();
+            DateProvider dateProvider = environment.getDateProvider();
+
+            for (Loan loan : activeLoans) {
+                Optional<Media> mediaOpt = mediaRepo.findById(loan.getMediaId());
+                if (!mediaOpt.isPresent()) continue;
+
+                Media media = mediaOpt.get();
+                String mediaType = media instanceof Book ? "Book" : "CD";
+                String status = loan.isOverdue(dateProvider.today()) ? "Overdue" : "On Time";
+
+                model.addRow(new Object[]{
+                    media.getTitle(),
+                    mediaType,
+                    loan.getCheckoutDate().toString(),
+                    loan.getDueDate().toString(),
+                    status,
+                    "Return"
+                });
             }
-            
-            try {
-                // Parse the payment amount
-                BigDecimal paymentAmount = new BigDecimal(amountStr.trim());
-                
-                // Validate the payment amount
-                if (paymentAmount.signum() <= 0) {
-                    throw new NumberFormatException("Payment amount must be positive");
+
+            // Create table with the model
+            JTable table = new JTable(model);
+            table.setRowHeight(40);
+            table.setFillsViewportHeight(true);
+
+            // Set up the button column
+            TableColumn buttonColumn = table.getColumnModel().getColumn(5);
+            buttonColumn.setCellRenderer(new ButtonRenderer());
+            buttonColumn.setCellEditor(new ButtonEditor(new JCheckBox(), table));
+
+            // Configure column widths
+            table.getColumnModel().getColumn(0).setPreferredWidth(200); // Title
+            table.getColumnModel().getColumn(1).setPreferredWidth(50);  // Type
+            table.getColumnModel().getColumn(2).setPreferredWidth(100); // Borrowed
+            table.getColumnModel().getColumn(3).setPreferredWidth(100); // Due Date
+            table.getColumnModel().getColumn(4).setPreferredWidth(80);  // Status
+            table.getColumnModel().getColumn(5).setPreferredWidth(80);  // Action
+
+            // Add table to scroll pane
+            JScrollPane scrollPane = new JScrollPane(table);
+            JLabel titleLabel = new JLabel("Your Borrowed Items:", JLabel.LEFT);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+            mainPanel.add(titleLabel, BorderLayout.NORTH);
+            mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+            // Show the dialog
+            JDialog dialog = new JDialog(frame, "Return Media", true);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.getContentPane().add(mainPanel);
+            dialog.pack();
+            dialog.setLocationRelativeTo(frame);
+            dialog.setVisible(true);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error loading borrowed items: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // Custom cell renderer for the button column
+    private static class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
+            setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            setBackground(new Color(52, 152, 219));
+            setForeground(Color.WHITE);
+            setBorderPainted(false);
+            setFocusPainted(false);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                     boolean isSelected, boolean hasFocus,
+                                                     int row, int column) {
+            setText((value == null) ? "" : value.toString());
+            return this;
+        }
+    }
+ // Custom cell editor for the Return button column
+    private class ButtonEditor extends AbstractCellEditor implements TableCellEditor {
+
+        private final JButton button;
+        private final JTable table;
+        private int currentRow = -1;
+        private String label;
+
+        public ButtonEditor(JCheckBox checkBox, JTable table) {
+            this.table = table;
+
+            button = new JButton();
+            button.setOpaque(true);
+            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            button.setBackground(new Color(52, 152, 219));
+            button.setForeground(Color.WHITE);
+            button.setBorderPainted(false);
+            button.setFocusPainted(false);
+
+            button.addActionListener(e -> {
+                fireEditingStopped();  // must call before using row
+
+                if (currentRow < 0) return; // prevent crash
+
+                String mediaTitle = (String) table.getModel().getValueAt(currentRow, 0);
+
+                returnMedia(mediaTitle);
+
+                ((AbstractTableModel) table.getModel()).fireTableDataChanged();
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            currentRow = row;
+            label = value == null ? "" : value.toString();
+            button.setText(label);
+            return button;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return label;
+        }
+    }
+
+    private class UnregisterButtonEditor extends AbstractCellEditor implements TableCellEditor {
+        protected JButton button;
+        private JTable table;
+
+        public UnregisterButtonEditor(JCheckBox checkBox, JTable table) {
+            this.table = table;
+
+            button = new JButton("Unregister");
+            button.setOpaque(true);
+            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            button.setBackground(new Color(52, 152, 219));
+            button.setForeground(Color.WHITE);
+            button.setBorderPainted(false);
+            button.setFocusPainted(false);
+
+            button.addActionListener(e -> {
+                fireEditingStopped();
+                int row = table.convertRowIndexToModel(table.getEditingRow());
+                String username = (String) table.getModel().getValueAt(row, 0);
+
+                unregisterUser(username);
+                ((AbstractTableModel) table.getModel()).fireTableDataChanged();
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            String status = (String) table.getModel().getValueAt(row, 3);
+            button.setEnabled("Can Unregister".equals(status));
+            return button;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return "Unregister";
+        }
+    }
+
+
+    private void showManageUsersPanel() {
+        try {
+            // Create the main panel
+            JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+            mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            mainPanel.setPreferredSize(new Dimension(800, 500));
+
+            // Create search panel
+            JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
+            JTextField searchField = new JTextField(30);
+            JButton searchButton = new JButton("Search");
+            searchPanel.add(new JLabel("Search by username or name:"), BorderLayout.WEST);
+            searchPanel.add(searchField, BorderLayout.CENTER);
+            searchPanel.add(searchButton, BorderLayout.EAST);
+
+            // Create table model
+            String[] columnNames = {"Username", "Name", "Role", "Status", "Action"};
+            DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return column == 4; // Only the action column is editable
                 }
-                
-                if (paymentAmount.compareTo(currentBalance) > 0) {
-                    throw new NumberFormatException(
-                        String.format("Payment cannot exceed current balance of $%.2f", currentBalance)
-                    );
+                @Override
+                public Class<?> getColumnClass(int columnIndex) {
+                    return columnIndex == 4 ? JButton.class : String.class;
                 }
-                
-                // Process the payment
-                BigDecimal newBalance = environment.getFineService().payFine(
-                    currentUser.getId(),
-                    paymentAmount
-                );
+            };
+
+            JTable usersTable = new JTable(model);
+            usersTable.setRowHeight(40);
+            usersTable.setFillsViewportHeight(true);
+
+            TableColumn buttonColumn = usersTable.getColumnModel().getColumn(4);
+            buttonColumn.setCellRenderer(new ButtonRenderer());
+            buttonColumn.setCellEditor(new UnregisterButtonEditor(new JCheckBox(), usersTable));
+
+            JScrollPane scrollPane = new JScrollPane(usersTable);
+
+            // ------------------------- FIXED: define loadUsers ---------------------------
+            Runnable loadUsers = () -> {
+                model.setRowCount(0); // clear table
+
+                Collection<User> users = environment.getUserRepository().findAll();
+
+                for (User u : users) {
+                    String status = "Can Unregister";
+
+                    if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
+                        status = "Has Active Loans";
+                    } else if (u.hasOutstandingFines()) {
+                        status = "Has Unpaid Fines";
+                    }
+
+                    model.addRow(new Object[]{
+                        u.getUsername(),
+                        u.getName(),
+                        u.getRole().toString(),
+                        status,
+                        "Unregister"
+                    });
+                }
+            };
+
+            // ------------------------- FIXED: define loadAllInto ---------------------------
+            Runnable loadAllInto = () -> {
+                model.setRowCount(0);
+                String term = searchField.getText().trim().toLowerCase();
+
+                Collection<User> users = environment.getUserRepository().findAll();
+
+                for (User u : users) {
+                    if (u.getUsername().toLowerCase().contains(term) ||
+                        u.getName().toLowerCase().contains(term)) {
+
+                        String status = "Can Unregister";
+
+                        if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
+                            status = "Has Active Loans";
+                        } else if (u.hasOutstandingFines()) {
+                            status = "Has Unpaid Fines";
+                        }
+
+                        model.addRow(new Object[]{
+                            u.getUsername(),
+                            u.getName(),
+                            u.getRole().toString(),
+                            status,
+                            "Unregister"
+                        });
+                    }
+                }
+            };
+
+            // Add action listeners
+            searchButton.addActionListener(e -> loadAllInto.run());
+            searchField.addActionListener(e -> loadAllInto.run());
+
+            // Add components to panel
+            mainPanel.add(searchPanel, BorderLayout.NORTH);
+            mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+            // Show the dialog
+            JDialog dialog = new JDialog(frame, "Manage Users", true);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.getContentPane().add(mainPanel);
+
+            loadUsers.run();  // initial load
+
+            dialog.pack();
+            dialog.setLocationRelativeTo(frame);
+            dialog.setVisible(true);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error initializing user management: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+
+    /**
+     * Attempts to unregister a user after confirming the action.
+     * Validates that the user has no active loans or unpaid fines.
+     *
+     * @param username the username of the account to unregister
+     */
+    private void unregisterUser(String username) {
+        try {
+            // Confirm unregistration
+            int confirm = JOptionPane.showConfirmDialog(
+                frame,
+                "Are you sure you want to unregister user: " + username + "?",
+                "Confirm Unregistration",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Get the user to unregister
+            	Optional<User> userOpt = environment.getUserRepository().findByUsername(username);
+
+                    
+                if (!userOpt.isPresent()) {
+                    throw new LibraryException("User not found: " + username);
+                }
+
+                // Let UserService handle the unregistration with all validations
+                environment.getUserService().unregister(userOpt.get().getId());
                 
                 // Show success message
-                String message;
-                if (newBalance.signum() > 0) {
-                    message = String.format(
-                        "Payment of $%.2f processed successfully.%nRemaining balance: $%.2f",
-                        paymentAmount, newBalance
-                    );
-                } else {
-                    message = String.format(
-                        "Payment of $%.2f processed successfully.%nYour fine balance is now cleared!",
-                        paymentAmount
-                    );
-                }
-                
                 JOptionPane.showMessageDialog(
                     frame,
-                    message,
-                    "Payment Successful",
+                    "User '" + username + "' has been unregistered successfully.",
+                    "Unregistration Successful",
                     JOptionPane.INFORMATION_MESSAGE
                 );
                 
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(
-                    frame,
-                    "Invalid amount: " + ex.getMessage(),
-                    "Invalid Input",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            } catch (LibraryException ex) {
-                JOptionPane.showMessageDialog(
-                    frame,
-                    "Error processing payment: " + ex.getMessage(),
-                    "Payment Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
+                // Refresh the user list
+                showManageUsersPanel();
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                 frame,
-                "An error occurred: " + ex.getMessage(),
-                "Error",
+                "Error unregistering user: " + ex.getMessage(),
+                "Unregistration Failed",
                 JOptionPane.ERROR_MESSAGE
             );
-            ex.printStackTrace();
         }
     }
     
-    private void showMessage(String message) {
-        JOptionPane.showMessageDialog(frame, message);
+    /**
+     * Processes the return of a borrowed media item.
+     * Updates the loan status, media availability, and applies fines when overdue.
+     *
+     * @param mediaTitle the title of the media item being returned
+     */
+    private void returnMedia(String mediaTitle) {
+        try {
+            // Get current user ID
+            String currentUserId = environment.getAuthService().getCurrentUser()
+                .orElseThrow(() -> new LibraryException("User not logged in"))
+                .getId();
+
+            // Find the loan for this media title
+            LoanRepository loanRepo = environment.getLoanRepository();
+            List<Loan> userLoans = loanRepo.findActiveByUser(currentUserId);
+            MediaRepository mediaRepo = environment.getMediaRepository();
+
+            Optional<Loan> matchingLoan = userLoans.stream()
+                .filter(loan -> {
+                    Optional<Media> mediaOpt = mediaRepo.findById(loan.getMediaId());
+                    return mediaOpt.isPresent() && mediaOpt.get().getTitle().equals(mediaTitle);
+                })
+                .findFirst();
+
+            if (!matchingLoan.isPresent()) {
+                throw new LibraryException("No active loan found for: " + mediaTitle);
+            }
+
+            Loan loan = matchingLoan.get();
+
+            // Process return
+            BorrowService borrowService = environment.getBorrowService();
+            BigDecimal fine = borrowService.returnMedia(loan.getId());
+
+            // Show success message
+            String message = "\"" + mediaTitle + "\" returned successfully";
+            if (fine.signum() > 0) {
+                message += ".\nA fine of $" + fine + " has been added to your account.";
+            }
+
+            JOptionPane.showMessageDialog(
+                frame,
+                message,
+                "Return Successful",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+
+            // Close the current dialog and show an updated one
+            Window[] windows = Window.getWindows();
+            for (Window window : windows) {
+                if (window.isShowing() && window instanceof JDialog) {
+                    JDialog dialog = (JDialog) window;
+                    if ("Return Media".equals(dialog.getTitle())) {
+                        dialog.dispose();
+                        break;
+                    }
+                }
+            }
+
+            // Show updated list
+            showReturnMediaPanel();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error returning item: " + ex.getMessage(),
+                "Return Failed",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }
