@@ -64,6 +64,8 @@ public class BorrowService {
 
     loanRepository.save(loan);
     media.markUnavailable();
+    // Persist updated quantity/availability so UI and storage stay in sync.
+    mediaRepository.save(media);
     user.addLoan(loan.getId());
     return loan;
   }
@@ -84,6 +86,8 @@ public class BorrowService {
             .findById(loan.getMediaId())
             .orElseThrow(() -> new LibraryException("Media not found: " + loan.getMediaId()));
     media.markAvailable();
+    // Persist updated quantity/availability so UI and storage stay in sync.
+    mediaRepository.save(media);
 
     User user =
         userRepository

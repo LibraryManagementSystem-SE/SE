@@ -4,12 +4,21 @@ import java.util.Objects;
 
 /**
  * Base class for all media items in the library (Book, CD).
+ *
+ * <p>Each {@code Media} instance represents a title that can have multiple physical copies
+ * in the library, tracked via {@link #quantity}. Availability is derived from this quantity:
+ * when {@code quantity > 0} the item is considered available, otherwise it is unavailable.
  */
 public abstract class Media {
 
   private final String id;
   private final String title;
   private final MediaType type;
+
+  /** Number of copies currently available in the library. */
+  private int quantity = 1;
+
+  /** Cached availability flag, kept in sync with {@link #quantity}. */
   private boolean available = true;
 
   /**
@@ -19,6 +28,7 @@ public abstract class Media {
     this.id = Objects.requireNonNull(id, "id");
     this.title = Objects.requireNonNull(title, "title");
     this.type = Objects.requireNonNull(type, "type");
+    // quantity defaults to 1; availability already true
   }
 
   /** @return unique media id */
@@ -36,18 +46,57 @@ public abstract class Media {
     return type;
   }
 
+  /**
+   * @return number of available copies of this media item.
+   */
+  public int getQuantity() {
+    return quantity;
+  }
+
+  /**
+   * Sets the current quantity, updating availability accordingly.
+   *
+   * <p>This is primarily used by persistence layers when loading from storage.</p>
+   *
+   * @param quantity new quantity (negative values are treated as zero)
+   */
+  public void setQuantity(int quantity) {
+    if (quantity < 0) {
+      quantity = 0;
+    }
+    this.quantity = quantity;
+    this.available = this.quantity > 0;
+  }
+
   /** @return true if the item is available to borrow */
   public boolean isAvailable() {
     return available;
   }
 
-  /** Marks this item as borrowed. */
+  /**
+   * Marks a single copy of this item as borrowed.
+   *
+   * <p>If at least one copy is available, the quantity is decreased by one. When the quantity
+   * reaches zero, {@link #isAvailable()} will start returning {@code false}.</p>
+   */
   public void markUnavailable() {
-    this.available = false;
+    if (quantity > 0) {
+      quantity--;
+    }
+    if (quantity <= 0) {
+      available = false;
+    }
   }
 
-  /** Marks this item as returned and available. */
+  /**
+   * Marks a single copy of this item as returned.
+   *
+   * <p>The quantity is increased by one and availability is updated accordingly.</p>
+   */
   public void markAvailable() {
-    this.available = true;
+    quantity++;
+    if (quantity > 0) {
+      available = true;
+    }
   }
 }

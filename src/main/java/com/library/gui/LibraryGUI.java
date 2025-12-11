@@ -1,6 +1,7 @@
 package com.library.gui;
 //cvomment
 import com.library.domain.User;
+import com.library.domain.UserRole;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Media;
@@ -24,7 +25,9 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -388,6 +391,9 @@ public class LibraryGUI {
         systemSettingsBtn.addActionListener(e -> {
             JOptionPane.showMessageDialog(frame, "System Settings functionality coming soon!");
         });
+
+        JButton listMediaBtn = createDashboardButton("List All Media", "📖");
+        listMediaBtn.addActionListener(e -> showSearchMediaPanel());
         
         // Add buttons to panel
         buttonsPanel.add(manageUsersBtn);
@@ -395,6 +401,7 @@ public class LibraryGUI {
         buttonsPanel.add(viewReportsBtn);
         buttonsPanel.add(manageLoansBtn);
         buttonsPanel.add(systemSettingsBtn);
+        buttonsPanel.add(listMediaBtn);
         
         contentPanel.add(titleLabel, BorderLayout.NORTH);
         contentPanel.add(buttonsPanel, BorderLayout.CENTER);
@@ -776,11 +783,11 @@ public class LibraryGUI {
         // -------------------------------
         // TABLE MODEL
         // -------------------------------
-        String[] columnNames = {"Title", "Type", "Author/Artist", "Action"};
+        String[] columnNames = {"Title", "Type", "Author/Artist", "Availability", "Action"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 3; // Only Borrow button
+                return column == 4; // Only Borrow button
             }
         };
 
@@ -795,7 +802,7 @@ public class LibraryGUI {
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus,
                                                            int row, int column) {
-                if (column == 3) {
+                if (column == 4) {
                     JButton button = new JButton("Borrow");
                     button.setOpaque(true);
                     if (isSelected) {
@@ -805,19 +812,28 @@ public class LibraryGUI {
                         button.setBackground(UIManager.getColor("Button.background"));
                         button.setForeground(UIManager.getColor("Button.foreground"));
                     }
+                    // Informational tooltip: remaining copies, without changing layout.
+                    Map<String, Integer> qtyMap =
+                        (Map<String, Integer>) table.getClientProperty("quantityByTitle");
+                    String mediaTitle = (String) table.getValueAt(row, 0);
+                    int qty = qtyMap != null && qtyMap.get(mediaTitle) != null ? qtyMap.get(mediaTitle) : 0;
+                    button.setToolTipText("Available copies: " + qty);
                     return button;
                 }
                 return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             }
         });
 
-        mediaTable.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(new JTextField()) {
+        mediaTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(new JTextField()) {
             @Override
             public Component getTableCellEditorComponent(JTable table, Object value,
                                                          boolean isSelected, int row, int column) {
                 JButton button = new JButton("Borrow");
                 button.addActionListener(e -> {
                     try {
+                        // End editing before mutating the table model to avoid index issues.
+                        fireEditingStopped();
+
                         String mediaTitle = (String) model.getValueAt(row, 0);
 
                         User currentUser = environment.getAuthService().getCurrentUser()
@@ -829,7 +845,7 @@ public class LibraryGUI {
                             .orElseThrow(() -> new LibraryException("Media not found"));
 
                         if (!media.isAvailable()) {
-                            throw new LibraryException("This item is already borrowed");
+                            throw new LibraryException("This item is not currently available");
                         }
 
                         String loanId = UUID.randomUUID().toString();
@@ -845,12 +861,15 @@ public class LibraryGUI {
                         );
 
                         environment.getLoanRepository().save(loan);
-                        media.markUnavailable();
-                        environment.getMediaRepository().save(media);
+                        media.markUnavailable(); // decreases quantity and updates availability
+                        environment.getMediaRepository().save(media); // persist updated quantity
                         currentUser.addLoan(loanId);
                         environment.getAuthService().updateCurrentUser(currentUser);
 
-                        model.removeRow(row);
+                        // Refresh the table so that availability is recalculated based on quantity.
+                        // This keeps the same UI but ensures items disappear only when no copies remain.
+                        ((DefaultTableModel) table.getModel()).setRowCount(0);
+                        ((Runnable) table.getClientProperty("loadFilteredMedia")).run();
 
                         JOptionPane.showMessageDialog(
                             frame,
@@ -866,10 +885,14 @@ public class LibraryGUI {
                             "Borrow Failed",
                             JOptionPane.ERROR_MESSAGE
                         );
-                    } finally {
-                        fireEditingStopped();
                     }
                 });
+                // Keep tooltip in editor as well (no UI changes).
+                Map<String, Integer> qtyMap =
+                    (Map<String, Integer>) table.getClientProperty("quantityByTitle");
+                String mediaTitle = (String) table.getValueAt(row, 0);
+                int qty = qtyMap != null && qtyMap.get(mediaTitle) != null ? qtyMap.get(mediaTitle) : 0;
+                button.setToolTipText("Available copies: " + qty);
                 return button;
             }
 
@@ -890,6 +913,7 @@ public class LibraryGUI {
 
             try {
                 Collection<Media> allMedia = environment.getMediaRepository().findAll();
+                Map<String, Integer> qtyMap = new HashMap<>();
 
                 for (Media media : allMedia) {
 
@@ -914,13 +938,21 @@ public class LibraryGUI {
                     if (media instanceof Book) creator = ((Book) media).getAuthor();
                     else if (media instanceof CD) creator = ((CD) media).getArtist();
 
+                    qtyMap.put(media.getTitle(), media.getQuantity());
+
+                    String availabilityText = "Available (" + media.getQuantity() + ")";
+
                     model.addRow(new Object[]{
                         media.getTitle(),
                         media.getType().toString(),
                         creator,
+                        availabilityText,
                         "Borrow"
                     });
                 }
+
+                // Expose quantities for tooltips without altering the table layout.
+                mediaTable.putClientProperty("quantityByTitle", qtyMap);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(
                     frame,
@@ -930,6 +962,9 @@ public class LibraryGUI {
                 );
             }
         };
+
+        // Make the loader accessible from the cell editor without changing the UI structure.
+        mediaTable.putClientProperty("loadFilteredMedia", loadFilteredMedia);
 
         // EVENTS
         searchButton.addActionListener(e -> loadFilteredMedia.run());
@@ -1539,6 +1574,7 @@ public class LibraryGUI {
     private class UnregisterButtonEditor extends AbstractCellEditor implements TableCellEditor {
         protected JButton button;
         private JTable table;
+        private int currentRow = -1;
 
         public UnregisterButtonEditor(JCheckBox checkBox, JTable table) {
             this.table = table;
@@ -1552,12 +1588,15 @@ public class LibraryGUI {
             button.setFocusPainted(false);
 
             button.addActionListener(e -> {
+                // Stop editing first, then safely resolve the stored row index.
                 fireEditingStopped();
-                int row = table.convertRowIndexToModel(table.getEditingRow());
-                String username = (String) table.getModel().getValueAt(row, 0);
+                if (currentRow < 0) {
+                    return; // No active row; avoid AIOOB.
+                }
+                int modelRow = table.convertRowIndexToModel(currentRow);
+                String username = (String) table.getModel().getValueAt(modelRow, 0);
 
                 unregisterUser(username);
-                ((AbstractTableModel) table.getModel()).fireTableDataChanged();
             });
         }
 
@@ -1565,13 +1604,54 @@ public class LibraryGUI {
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                      boolean isSelected, int row, int column) {
             String status = (String) table.getModel().getValueAt(row, 3);
+            // Disable for admins and any non-unregisterable status
             button.setEnabled("Can Unregister".equals(status));
+            currentRow = row;
             return button;
         }
 
         @Override
         public Object getCellEditorValue() {
             return "Unregister";
+        }
+    }
+
+    private class UserDetailsButtonEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JButton button;
+        private final JTable table;
+        private int currentRow = -1;
+
+        public UserDetailsButtonEditor(JCheckBox checkBox, JTable table) {
+            this.table = table;
+            button = new JButton("Details");
+            button.setOpaque(true);
+            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            button.setBackground(new Color(52, 152, 219));
+            button.setForeground(Color.WHITE);
+            button.setBorderPainted(false);
+            button.setFocusPainted(false);
+
+            button.addActionListener(e -> {
+                fireEditingStopped();
+                if (currentRow < 0) {
+                    return;
+                }
+                int modelRow = table.convertRowIndexToModel(currentRow);
+                String username = (String) table.getModel().getValueAt(modelRow, 0);
+                showUserDetails(username);
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            currentRow = row;
+            return button;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return "Details";
         }
     }
 
@@ -1592,15 +1672,15 @@ public class LibraryGUI {
             searchPanel.add(searchButton, BorderLayout.EAST);
 
             // Create table model
-            String[] columnNames = {"Username", "Name", "Role", "Status", "Action"};
+            String[] columnNames = {"Username", "Name", "Role", "Status", "Details", "Action"};
             DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
-                    return column == 4; // Only the action column is editable
+                    return column == 4 || column == 5; // Details and Action columns
                 }
                 @Override
                 public Class<?> getColumnClass(int columnIndex) {
-                    return columnIndex == 4 ? JButton.class : String.class;
+                    return (columnIndex == 4 || columnIndex == 5) ? JButton.class : String.class;
                 }
             };
 
@@ -1608,9 +1688,13 @@ public class LibraryGUI {
             usersTable.setRowHeight(40);
             usersTable.setFillsViewportHeight(true);
 
-            TableColumn buttonColumn = usersTable.getColumnModel().getColumn(4);
-            buttonColumn.setCellRenderer(new ButtonRenderer());
-            buttonColumn.setCellEditor(new UnregisterButtonEditor(new JCheckBox(), usersTable));
+            TableColumn detailsColumn = usersTable.getColumnModel().getColumn(4);
+            detailsColumn.setCellRenderer(new ButtonRenderer());
+            detailsColumn.setCellEditor(new UserDetailsButtonEditor(new JCheckBox(), usersTable));
+
+            TableColumn actionColumn = usersTable.getColumnModel().getColumn(5);
+            actionColumn.setCellRenderer(new ButtonRenderer());
+            actionColumn.setCellEditor(new UnregisterButtonEditor(new JCheckBox(), usersTable));
 
             JScrollPane scrollPane = new JScrollPane(usersTable);
 
@@ -1621,12 +1705,15 @@ public class LibraryGUI {
                 Collection<User> users = environment.getUserRepository().findAll();
 
                 for (User u : users) {
-                    String status = "Can Unregister";
-
-                    if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
+                    String status;
+                    if (u.getRole() == UserRole.ADMIN) {
+                        status = "Admin";
+                    } else if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
                         status = "Has Active Loans";
                     } else if (u.hasOutstandingFines()) {
                         status = "Has Unpaid Fines";
+                    } else {
+                        status = "Can Unregister";
                     }
 
                     model.addRow(new Object[]{
@@ -1634,6 +1721,7 @@ public class LibraryGUI {
                         u.getName(),
                         u.getRole().toString(),
                         status,
+                        "Details",
                         "Unregister"
                     });
                 }
@@ -1650,12 +1738,15 @@ public class LibraryGUI {
                     if (u.getUsername().toLowerCase().contains(term) ||
                         u.getName().toLowerCase().contains(term)) {
 
-                        String status = "Can Unregister";
-
-                        if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
+                        String status;
+                        if (u.getRole() == UserRole.ADMIN) {
+                            status = "Admin";
+                        } else if (!environment.getLoanRepository().findActiveByUser(u.getId()).isEmpty()) {
                             status = "Has Active Loans";
                         } else if (u.hasOutstandingFines()) {
                             status = "Has Unpaid Fines";
+                        } else {
+                            status = "Can Unregister";
                         }
 
                         model.addRow(new Object[]{
@@ -1663,6 +1754,7 @@ public class LibraryGUI {
                             u.getName(),
                             u.getRole().toString(),
                             status,
+                            "Details",
                             "Unregister"
                         });
                     }
@@ -1737,7 +1829,15 @@ public class LibraryGUI {
                     JOptionPane.INFORMATION_MESSAGE
                 );
                 
-                // Refresh the user list
+                // Close any open Manage Users dialog before reopening to avoid stacking.
+                for (Window window : Window.getWindows()) {
+                    if (window.isShowing() && window instanceof JDialog dialog
+                        && "Manage Users".equals(dialog.getTitle())) {
+                        dialog.dispose();
+                        break;
+                    }
+                }
+                // Refresh the user list in a fresh dialog.
                 showManageUsersPanel();
             }
         } catch (Exception ex) {
@@ -1745,6 +1845,91 @@ public class LibraryGUI {
                 frame,
                 "Error unregistering user: " + ex.getMessage(),
                 "Unregistration Failed",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void showUserDetails(String username) {
+        try {
+            Optional<User> userOpt = environment.getUserRepository().findByUsername(username);
+            if (userOpt.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    frame,
+                    "User not found: " + username,
+                    "User Details",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            User user = userOpt.get();
+
+            JPanel infoPanel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(5, 5, 5, 15);
+
+            gbc.gridx = 0; gbc.gridy = 0;
+            infoPanel.add(new JLabel("<html><b>Username:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(user.getUsername()), gbc);
+
+            gbc.gridx = 0; gbc.gridy = 1;
+            infoPanel.add(new JLabel("<html><b>Name:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(user.getName()), gbc);
+
+            gbc.gridx = 0; gbc.gridy = 2;
+            infoPanel.add(new JLabel("<html><b>Role:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel(user.getRole().name()), gbc);
+
+            gbc.gridx = 0; gbc.gridy = 3;
+            infoPanel.add(new JLabel("<html><b>Outstanding Fines:</b></html>"), gbc);
+            gbc.gridx = 1;
+            infoPanel.add(new JLabel("$" + user.getFineBalance()), gbc);
+
+            String[] cols = {"Title", "Type", "Borrowed On", "Due Date", "Status"};
+            DefaultTableModel model = new DefaultTableModel(cols, 0);
+
+            List<Loan> loans = environment.getLoanRepository().findActiveByUser(user.getId());
+            for (Loan loan : loans) {
+                Optional<Media> mediaOpt = environment.getMediaRepository().findById(loan.getMediaId());
+                if (mediaOpt.isEmpty()) {
+                    continue;
+                }
+                Media media = mediaOpt.get();
+                LocalDate today = environment.getDateProvider().today();
+                String status = loan.isOverdue(today) ? "Overdue" : "On Loan";
+                model.addRow(new Object[]{
+                    media.getTitle(),
+                    media.getType().name(),
+                    loan.getCheckoutDate().toString(),
+                    loan.getDueDate().toString(),
+                    status
+                });
+            }
+
+            JTable table = new JTable(model);
+            JScrollPane scrollPane = new JScrollPane(table);
+
+            JPanel main = new JPanel(new BorderLayout(10, 10));
+            main.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            main.add(infoPanel, BorderLayout.NORTH);
+            main.add(scrollPane, BorderLayout.CENTER);
+
+            JDialog dialog = new JDialog(frame, "User Details: " + username, true);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.getContentPane().add(main);
+            dialog.setSize(700, 450);
+            dialog.setLocationRelativeTo(frame);
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error showing user details: " + ex.getMessage(),
+                "User Details",
                 JOptionPane.ERROR_MESSAGE
             );
         }

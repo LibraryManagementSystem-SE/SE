@@ -1,18 +1,17 @@
-C1;Thriller;Michael Jackson
-C2;Back in Black;AC/DC
-C3;Hotel California;Eagles
-C4;The Dark Side of the Moon;Pink Floyd
-C6;Nevermind;Nirvana
-C8;Born This Way;Lady Gaga
-C9;Divide;Ed Sheeran
-C10;1989;Taylor Swift
-C11;Bad;Michael Jackson
-C12;Rumours;Fleetwood Mac
-C13;Hybrid Theory;Linkin Park
-C14;Purpose;Justin Bieber
-C15;Elissa Best Of;Elissa
-98ddc712-6636-404b-b64d-54d534a08ef5;Thriller;Michael Jackson
-c7abd078-acfb-4722-a843-ceb86e1b4e01;Nour El Ain;Amr Diab
-74b57ee9-ae84-4291-a40d-1578643eef29;Amarin;Amr Diab
-C7;21;Adele
-C5;Abbey Road;The Beatles
+C2;Back in Black;AC/DC;5
+C3;Hotel California;Eagles;5
+C4;The Dark Side of the Moon;Pink Floyd;5
+C6;Nevermind;Nirvana;5
+C8;Born This Way;Lady Gaga;5
+C9;Divide;Ed Sheeran;5
+C10;1989;Taylor Swift;5
+C11;Bad;Michael Jackson;5
+C12;Rumours;Fleetwood Mac;5
+C13;Hybrid Theory;Linkin Park;5
+C14;Purpose;Justin Bieber;5
+c7abd078-acfb-4722-a843-ceb86e1b4e01;Nour El Ain;Amr Diab;5
+74b57ee9-ae84-4291-a40d-1578643eef29;Amarin;Amr Diab;5
+C7;21;Adele;5
+C5;Abbey Road;The Beatles;5
+C15;Elissa Best Of;Elissa;5
+C1;Thriller;Michael Jackson;1

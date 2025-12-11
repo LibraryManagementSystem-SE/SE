@@ -27,10 +27,11 @@ class FineServiceTest {
   private FineService fineService;
   private LoanRepository loanRepository;
   private FakeDateProvider dateProvider;
+  private UserRepository userRepository;
 
   @BeforeEach
   void setUp() {
-    UserRepository userRepository = new InMemoryUserRepository();
+    userRepository = new InMemoryUserRepository();
     MediaRepository mediaRepository = new InMemoryMediaRepository();
     loanRepository = new InMemoryLoanRepository();
     dateProvider = new FakeDateProvider(LocalDate.of(2025, 2, 1));
@@ -81,6 +82,16 @@ class FineServiceTest {
     user.addFine(BigDecimal.valueOf(50));
     BigDecimal balance = fineService.payFine(user.getId(), BigDecimal.valueOf(20));
     assertEquals(BigDecimal.valueOf(30), balance);
+  }
+
+  @Test
+  void payFinePersistsUpdatedBalance() {
+    user.addFine(BigDecimal.valueOf(40));
+
+    fineService.payFine(user.getId(), BigDecimal.valueOf(15));
+
+    User reloaded = userRepository.findById(user.getId()).orElseThrow();
+    assertEquals(BigDecimal.valueOf(25), reloaded.getFineBalance());
   }
 }
 

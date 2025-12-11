@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Loan;
+import com.library.domain.Media;
 import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.domain.FineStrategyFactory;
@@ -87,6 +88,33 @@ class BorrowServiceTest {
     BigDecimal fine = borrowService.returnMedia(loan.getId());
     assertEquals(BigDecimal.valueOf(20), fine); // 2 days overdue * 10
     assertTrue(book.isAvailable());
+  }
+
+  @Test
+  void borrowAndReturnAdjustQuantityAndPersist() {
+    // Arrange: ensure single copy
+    book.setQuantity(1);
+    mediaRepository.save(book);
+
+    // Act: borrow once
+    borrowService.borrow(user.getId(), book.getId());
+
+    // Assert: quantity decremented, unavailable
+    Media afterBorrow =
+        mediaRepository.findById(book.getId()).orElseThrow();
+    assertEquals(0, afterBorrow.getQuantity());
+    assertFalse(afterBorrow.isAvailable());
+
+    // Act: return it
+    Loan loan = loanRepository.findActiveByUser(user.getId()).get(0);
+    ((FakeDateProvider) dateProvider).advanceDays(1); // not overdue, just to move time
+    borrowService.returnMedia(loan.getId());
+
+    // Assert: quantity restored, available
+    Media afterReturn =
+        mediaRepository.findById(book.getId()).orElseThrow();
+    assertEquals(1, afterReturn.getQuantity());
+    assertTrue(afterReturn.isAvailable());
   }
 }
 
