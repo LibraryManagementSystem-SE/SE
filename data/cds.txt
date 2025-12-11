@@ -2,9 +2,7 @@ C1;Thriller;Michael Jackson
 C2;Back in Black;AC/DC
 C3;Hotel California;Eagles
 C4;The Dark Side of the Moon;Pink Floyd
-C5;Abbey Road;The Beatles
 C6;Nevermind;Nirvana
-C7;21;Adele
 C8;Born This Way;Lady Gaga
 C9;Divide;Ed Sheeran
 C10;1989;Taylor Swift
@@ -14,3 +12,7 @@ C13;Hybrid Theory;Linkin Park
 C14;Purpose;Justin Bieber
 C15;Elissa Best Of;Elissa
 98ddc712-6636-404b-b64d-54d534a08ef5;Thriller;Michael Jackson
+c7abd078-acfb-4722-a843-ceb86e1b4e01;Nour El Ain;Amr Diab
+74b57ee9-ae84-4291-a40d-1578643eef29;Amarin;Amr Diab
+C7;21;Adele
+C5;Abbey Road;The Beatles
