@@ -24,6 +24,7 @@ public class UserService {
     this.loanRepository = loanRepository;
     this.authService = authService;
   }
+ 
 
   public User registerMember(String username, String name, String password) {
     ensureUsernameAvailable(username);
@@ -67,6 +68,9 @@ public class UserService {
       throw new LibraryException("Username already in use");
     }
   }
+  public UserRepository getUserRepository() {
+	    return userRepository;
+	}
 }
 
 

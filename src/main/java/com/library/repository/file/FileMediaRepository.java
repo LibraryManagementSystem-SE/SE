@@ -73,24 +73,33 @@ public class FileMediaRepository implements MediaRepository {
 
   @Override
   public List<Media> search(String query) {
-    if (query == null || query.isBlank()) {
-      return new ArrayList<>(findAll());
-    }
-    String needle = query.toLowerCase();
-    List<Media> matches = new ArrayList<>();
-    for (Media media : findAll()) {
-      if (media.getTitle().toLowerCase().contains(needle)) {
-        matches.add(media);
-        continue;
+      if (query == null || query.isBlank()) {
+          return new ArrayList<>(findAll());
       }
-      if (media.getType() == MediaType.BOOK && media instanceof Book book) {
-        if (book.getAuthor().toLowerCase().contains(needle)
-            || book.getIsbn().toLowerCase().contains(needle)) {
-          matches.add(media);
-        }
+      String needle = query.toLowerCase();
+      List<Media> matches = new ArrayList<>();
+      for (Media media : findAll()) {
+          // Search by title for all media types
+          if (media.getTitle().toLowerCase().contains(needle)) {
+              matches.add(media);
+              continue;
+          }
+          
+          // For books, search by author and ISBN
+          if (media.getType() == MediaType.BOOK && media instanceof Book book) {
+              if (book.getAuthor().toLowerCase().contains(needle) || 
+                  book.getIsbn().toLowerCase().contains(needle)) {
+                  matches.add(media);
+              }
+          } 
+          // For CDs, search by artist
+          else if (media.getType() == MediaType.CD && media instanceof CD cd) {
+              if (cd.getArtist().toLowerCase().contains(needle)) {
+                  matches.add(media);
+              }
+          }
       }
-    }
-    return matches;
+      return matches;
   }
 
   private void writeAll(List<Media> all) {
