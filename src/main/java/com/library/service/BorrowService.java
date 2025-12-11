@@ -64,43 +64,41 @@ public class BorrowService {
 
     loanRepository.save(loan);
     media.markUnavailable();
-    // Persist updated quantity/availability so UI and storage stay in sync.
-    mediaRepository.save(media);
     user.addLoan(loan.getId());
     return loan;
   }
 
   public BigDecimal returnMedia(String loanId) {
-    Loan loan =
-        loanRepository
-            .findById(loanId)
-            .orElseThrow(() -> new LibraryException("Loan not found: " + loanId));
-    if (loan.isReturned()) {
-      return BigDecimal.ZERO;
-    }
-    LocalDate today = dateProvider.today();
-    loan.markReturned(today);
+	    Loan loan = loanRepository.findById(loanId)
+	        .orElseThrow(() -> new LibraryException("Loan not found: " + loanId));
 
-    Media media =
-        mediaRepository
-            .findById(loan.getMediaId())
-            .orElseThrow(() -> new LibraryException("Media not found: " + loan.getMediaId()));
-    media.markAvailable();
-    // Persist updated quantity/availability so UI and storage stay in sync.
-    mediaRepository.save(media);
+	    if (loan.isReturned()) {
+	        return BigDecimal.ZERO;
+	    }
 
-    User user =
-        userRepository
-            .findById(loan.getUserId())
-            .orElseThrow(() -> new LibraryException("User not found: " + loan.getUserId()));
-    user.closeLoan(loan.getId());
+	    LocalDate today = dateProvider.today();
 
-    long overdueDays = loan.daysOverdue(today);
-    BigDecimal fine =
-        fineStrategyFactory.forType(media.getType()).calculateFine(overdueDays);
-    user.addFine(fine);
-    return fine;
-  }
+	    // ✔ FIX: calculate overdue BEFORE marking returned
+	    long overdueDays = loan.daysOverdue(today);
+
+	    loan.markReturned(today);
+
+	    Media media = mediaRepository.findById(loan.getMediaId())
+	        .orElseThrow(() -> new LibraryException("Media not found: " + loan.getMediaId()));
+	    media.markAvailable();
+
+	    User user = userRepository.findById(loan.getUserId())
+	        .orElseThrow(() -> new LibraryException("User not found: " + loan.getUserId()));
+	    user.closeLoan(loan.getId());
+
+	    BigDecimal fine =
+	        fineStrategyFactory.forType(media.getType()).calculateFine(overdueDays);
+
+	    user.addFine(fine);
+
+	    return fine;
+	}
+
 
   private void ensureBorrowAllowed(User user) {
     if (user.hasOutstandingFines()) {

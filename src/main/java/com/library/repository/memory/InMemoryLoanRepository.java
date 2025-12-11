@@ -44,4 +44,10 @@ public class InMemoryLoanRepository implements LoanRepository {
   public Collection<Loan> findAll() {
     return List.copyOf(loans.values());
   }
+
+  @Override
+  public void delete(String id) {
+      loans.remove(id);
+  }
+
 }
