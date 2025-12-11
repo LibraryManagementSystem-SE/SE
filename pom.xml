@@ -10,6 +10,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.jupiter.version>5.11.0</junit.jupiter.version>
     <mockito.version>5.12.0</mockito.version>
+    
+  
+    <sonar.organization>librarymanagementsystem-se</sonar.organization>
+    <sonar.projectKey>librarymanagementsystem-se_SE</sonar.projectKey>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
   </properties>
 
   <dependencies>
