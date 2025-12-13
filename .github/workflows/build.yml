@@ -34,13 +34,10 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Run Tests + JaCoCo Report
-        run: |
-          cd LibraryManagementSystem
-          mvn clean test jacoco:report
+        run: mvn clean test jacoco:report
 
       - name: Debug Jacoco Path
         run: |
-          cd LibraryManagementSystem
           echo "----- Checking Jacoco Report Folder -----"
           ls -R target/site/jacoco || echo "Jacoco folder NOT found!"
           echo "-----------------------------------------"
@@ -51,15 +48,14 @@ jobs:
           args: >
             -Dsonar.projectKey=librarymanagementsystem-se
             -Dsonar.organization=librarymanagementsystem-se
-            -Dsonar.projectBaseDir=LibraryManagementSystem
             -Dsonar.sources=src/main/java
             -Dsonar.tests=src/test/java
             -Dsonar.java.binaries=target/classes
             -Dsonar.java.test.binaries=target/test-classes
             -Dsonar.java.coveragePlugin=jacoco
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-            -Dsonar.coverage.exclusions=*/com/library/app/,/com/library/app//,*/*Screen.java,*/*Frame.java,*/*RoundedBorder.java,*/*GUI.java,*/*Main.java,*/EmailNotifier.java,*/Observer.java
-            -Dsonar.exclusions=*/com/library/app/,/com/library/app//,*/*Screen.java,*/*Frame.java,*/*RoundedBorder.java,*/*GUI.java,*/*Main.java,*/EmailNotifier.java,*/Observer.java
+            -Dsonar.coverage.exclusions=*/com/library/app/,*/*Screen.java,*/*Frame.java,*/*RoundedBorder.java,*/*GUI.java,*/*Main.java,*/EmailNotifier.java,*/Observer.java
+            -Dsonar.exclusions=*/com/library/app/,*/*Screen.java,*/*Frame.java,*/*RoundedBorder.java,*/*GUI.java,*/*Main.java,*/EmailNotifier.java,*/Observer.java
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
