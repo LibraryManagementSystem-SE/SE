@@ -34,6 +34,12 @@ jobs:
       - name: Run Tests + JaCoCo
         run: mvn clean verify
 
+      - name: Check JaCoCo XML
+        run: |
+          echo "Checking JaCoCo report..."
+          ls -l target/site/jacoco || true
+          test -f target/site/jacoco/jacoco.xml && echo "jacoco.xml FOUND" || echo "jacoco.xml NOT FOUND"
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v5
         with:
