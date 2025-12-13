@@ -1,0 +1,11 @@
+com.library.admin.service
+com.library.common
+com.library.domain
+com.library.gui
+com.library.notification
+com.library.repository
+com.library.repository.file
+com.library.repository.memory
+com.library.service
+com.library.support
+com.library.system
