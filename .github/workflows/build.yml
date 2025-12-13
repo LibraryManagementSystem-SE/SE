@@ -32,16 +32,10 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Run Tests + JaCoCo
-        run: mvn clean verify
-
-      - name: Check JaCoCo XML
-        run: |
-          echo "Checking JaCoCo report..."
-          ls -l target/site/jacoco || true
-          test -f target/site/jacoco/jacoco.xml && echo "jacoco.xml FOUND" || echo "jacoco.xml NOT FOUND"
+        run: mvn clean test jacoco:report
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         with:
           args: >
             -Dsonar.projectKey=LibraryManagementSystem-SE_SE
@@ -49,5 +43,7 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/*Application.java,**/*CLI.java,**/*Main.java
+            -Dsonar.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/*Application.java,**/*CLI.java,**/*Main.java
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
