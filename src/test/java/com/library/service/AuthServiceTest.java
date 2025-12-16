@@ -2,6 +2,7 @@ package com.library.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.library.common.LibraryException;
 import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.repository.UserRepository;

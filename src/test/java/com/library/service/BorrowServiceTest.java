@@ -2,6 +2,7 @@ package com.library.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.library.common.LibraryException;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Loan;

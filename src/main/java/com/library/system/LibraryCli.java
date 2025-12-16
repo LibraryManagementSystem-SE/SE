@@ -7,7 +7,7 @@ import com.library.service.AuthService;
 import com.library.service.BorrowService;
 import com.library.service.CatalogService;
 import com.library.service.FineService;
-import com.library.service.LibraryException;
+import com.library.common.LibraryException;
 import com.library.service.ReminderService;
 import com.library.service.UserService;
 import java.math.BigDecimal;

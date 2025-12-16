@@ -4,6 +4,7 @@ import com.library.domain.Loan;
 import com.library.domain.Media;
 import com.library.domain.OverdueReport;
 import com.library.domain.User;
+import com.library.common.LibraryException;
 import com.library.domain.FineStrategyFactory;
 import com.library.repository.LoanRepository;
 import com.library.repository.MediaRepository;

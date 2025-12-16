@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.common.LibraryException;
 import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.repository.UserRepository;
