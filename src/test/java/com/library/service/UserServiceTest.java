@@ -69,7 +69,6 @@ class UserServiceTest {
     void unregister_success() {
         User user = mock(User.class);
 
-        doNothing().when(authService).requireAdmin();
         when(userRepository.findById("1")).thenReturn(Optional.of(user));
         when(loanRepository.findActiveByUser("1")).thenReturn(Collections.emptyList());
         when(user.hasOutstandingFines()).thenReturn(false);
