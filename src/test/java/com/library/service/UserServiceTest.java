@@ -1,15 +1,12 @@
 package com.library.service;
 
 import com.library.common.LibraryException;
-import com.library.domain.Loan;
 import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.repository.LoanRepository;
 import com.library.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
 import java.util.Collections;
 import java.util.Optional;
 
@@ -80,7 +77,6 @@ class UserServiceTest {
 
     @Test
     void unregisterFails_whenUserNotFound() {
-        doNothing().when(authService).requireAdmin();
         when(userRepository.findById("1")).thenReturn(Optional.empty());
 
         assertThrows(
@@ -93,10 +89,9 @@ class UserServiceTest {
     void unregisterFails_whenUserHasActiveLoans() {
         User user = mock(User.class);
 
-        doNothing().when(authService).requireAdmin();
         when(userRepository.findById("1")).thenReturn(Optional.of(user));
         when(loanRepository.findActiveByUser("1"))
-        .thenReturn(Collections.singletonList(mock(Loan.class)));
+                .thenReturn(Collections.singletonList(null));
 
         assertThrows(
                 LibraryException.class,
@@ -110,7 +105,6 @@ class UserServiceTest {
     void unregisterFails_whenUserHasOutstandingFines() {
         User user = mock(User.class);
 
-        doNothing().when(authService).requireAdmin();
         when(userRepository.findById("1")).thenReturn(Optional.of(user));
         when(loanRepository.findActiveByUser("1")).thenReturn(Collections.emptyList());
         when(user.hasOutstandingFines()).thenReturn(true);
@@ -125,7 +119,6 @@ class UserServiceTest {
 
     @Test
     void listAllUsers_requiresAdmin() {
-        doNothing().when(authService).requireAdmin();
         when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
         assertNotNull(userService.listAllUsers());
