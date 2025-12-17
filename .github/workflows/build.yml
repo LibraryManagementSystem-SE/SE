@@ -46,5 +46,5 @@ jobs:
            -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
            -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/test/**
-           env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
