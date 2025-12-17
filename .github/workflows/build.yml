@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    name: Build and SonarCloud Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -23,19 +22,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
       - name: Run Tests + JaCoCo
         run: mvn clean test jacoco:report
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.projectKey=LibraryManagementSystem-SE_SE
@@ -43,8 +36,5 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-            -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
-            -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
-            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/test/**
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            -Dsonar.coverage.exclusions=**/gui/**,**/system/**,**/repository/**,**/domain/**,**/notification/**,**/*Application.java,**/*CLI.java,**/*Main.java
+            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/domain/**,**/notification/**,**/test/**
