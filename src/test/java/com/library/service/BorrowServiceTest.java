@@ -94,6 +94,39 @@ class BorrowServiceTest {
     loanRepository.save(existing);
     assertThrows(LibraryException.class, () -> borrowService.borrow(user.getId(), cd.getId()));
   }
+  
+  
+  @Test
+  void returnMediaSecondTimeDoesNothing() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+
+      borrowService.returnMedia(loan.getId()); // first return
+      BigDecimal fine = borrowService.returnMedia(loan.getId()); // second return
+
+      assertEquals(BigDecimal.ZERO, fine);
+  }
+  @Test
+  void mediaBecomesAvailableAfterReturn() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+
+      borrowService.returnMedia(loan.getId());
+
+      assertTrue(book.isAvailable());
+  }
+
+  
+  @Test
+  void returnMediaOnExactDueDateHasNoFine() {
+      Loan loan = borrowService.borrow(user.getId(), book.getId());
+
+      ((FakeDateProvider) dateProvider).advanceDays(28); // exactly due date
+      BigDecimal fine = borrowService.returnMedia(loan.getId());
+
+      assertEquals(BigDecimal.ZERO, fine);
+  }
+
+
+
 
   @Test
   void returningOverdueMediaAddsFine() {

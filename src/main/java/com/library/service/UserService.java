@@ -5,8 +5,6 @@ import com.library.domain.UserRole;
 import com.library.common.LibraryException;
 import com.library.repository.LoanRepository;
 import com.library.repository.UserRepository;
-import java.util.Collection;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
