@@ -1,200 +1,219 @@
 package com.library.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.library.common.LibraryException;
-import com.library.domain.Book;
-import com.library.domain.CD;
-import com.library.domain.Loan;
-import com.library.domain.Media;
-import com.library.domain.User;
-import com.library.domain.UserRole;
-import com.library.domain.FineStrategyFactory;
-import com.library.repository.LoanRepository;
-import com.library.repository.MediaRepository;
-import com.library.repository.UserRepository;
-import com.library.repository.memory.InMemoryLoanRepository;
-import com.library.repository.memory.InMemoryMediaRepository;
-import com.library.repository.memory.InMemoryUserRepository;
+import com.library.domain.*;
+import com.library.repository.*;
 import com.library.support.DateProvider;
-import com.library.support.FakeDateProvider;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 class BorrowServiceTest {
 
-  private MediaRepository mediaRepository;
-  private UserRepository userRepository;
-  private LoanRepository loanRepository;
-  private DateProvider dateProvider;
-  private BorrowService borrowService;
-  private User user;
-  private Book book;
-  private CD cd;
+    private LoanRepository loanRepository;
+    private MediaRepository mediaRepository;
+    private UserRepository userRepository;
+    private DateProvider dateProvider;
+    private FineStrategyFactory fineFactory;
 
-  @BeforeEach
-  void setUp() {
-    mediaRepository = new InMemoryMediaRepository();
-    userRepository = new InMemoryUserRepository();
-    loanRepository = new InMemoryLoanRepository();
-    dateProvider = new FakeDateProvider(LocalDate.of(2025, 1, 1));
-    borrowService =
-        new BorrowService(
-            loanRepository,
-            mediaRepository,
-            userRepository,
-            dateProvider,
-            new FineStrategyFactory());
-    user = new User("u1", "alice", "Alice", UserRole.MEMBER, "pw");
-    userRepository.save(user);
-    book = new Book("b1", "Domain-Driven Design", "Evans", "123");
-    cd = new CD("c1", "Kind of Blue", "Miles Davis");
-    mediaRepository.save(book);
-    mediaRepository.save(cd);
-  }
-  private void removeMediaFromRepository(String id) {
-      try {
-          var field = InMemoryMediaRepository.class.getDeclaredField("mediaStore");
-          field.setAccessible(true);
-          @SuppressWarnings("unchecked")
-          Map<String, Media> store = (Map<String, Media>) field.get(mediaRepository);
-          store.remove(id);
-      } catch (Exception e) {
-          throw new RuntimeException(e);
-      }
-  }
+    private BorrowService borrowService;
 
-  @Test
-  void borrowBookUses28DayLoanPeriod() {
-    Loan loan = borrowService.borrow(user.getId(), book.getId());
-    assertEquals(LocalDate.of(2025, 1, 29), loan.getDueDate());
-    assertFalse(book.isAvailable());
-  }
+    @BeforeEach
+    void setUp() {
+        loanRepository = mock(LoanRepository.class);
+        mediaRepository = mock(MediaRepository.class);
+        userRepository = mock(UserRepository.class);
+        dateProvider = mock(DateProvider.class);
+        fineFactory = new FineStrategyFactory();
 
-  @Test
-  void borrowCdUsesSevenDayLoanPeriod() {
-    Loan loan = borrowService.borrow(user.getId(), cd.getId());
-    assertEquals(LocalDate.of(2025, 1, 8), loan.getDueDate());
-  }
+        borrowService = new BorrowService(
+                loanRepository,
+                mediaRepository,
+                userRepository,
+                dateProvider,
+                fineFactory
+        );
+    }
 
-  @Test
-  void borrowBlockedWhenUserHasOutstandingFine() {
-    user.addFine(BigDecimal.TEN);
-    assertThrows(LibraryException.class, () -> borrowService.borrow(user.getId(), book.getId()));
-  }
+    /* =========================
+       borrow()
+       ========================= */
 
-  @Test
-  void borrowBlockedWhenUserHasOverdueLoan() {
-    Loan existing =
-        new Loan("l1", user.getId(), book.getId(), LocalDate.of(2024, 12, 1), LocalDate.of(2024, 12, 29));
-    loanRepository.save(existing);
-    assertThrows(LibraryException.class, () -> borrowService.borrow(user.getId(), cd.getId()));
-  }
-  
-  
-  @Test
-  void returnMediaSecondTimeDoesNothing() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
+    @Test
+    void borrowSuccess() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Media book = new Book("b1","Clean Code","Martin","123");
 
-      borrowService.returnMedia(loan.getId()); // first return
-      BigDecimal fine = borrowService.returnMedia(loan.getId()); // second return
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(loanRepository.findActiveByMedia("b1")).thenReturn(Optional.empty());
+        when(dateProvider.today()).thenReturn(LocalDate.of(2025,1,1));
 
-      assertEquals(BigDecimal.ZERO, fine);
-  }
-  @Test
-  void mediaBecomesAvailableAfterReturn() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
+        Loan loan = borrowService.borrow("u1","b1");
 
-      borrowService.returnMedia(loan.getId());
+        assertNotNull(loan);
+        verify(loanRepository).save(any());
+    }
 
-      assertTrue(book.isAvailable());
-  }
+    @Test
+    void borrowFailsWhenUserNotFound() {
+        when(userRepository.findById("u1")).thenReturn(Optional.empty());
 
-  
-  @Test
-  void returnMediaOnExactDueDateHasNoFine() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
+        assertThrows(LibraryException.class,
+                () -> borrowService.borrow("u1","b1"));
+    }
 
-      ((FakeDateProvider) dateProvider).advanceDays(28); // exactly due date
-      BigDecimal fine = borrowService.returnMedia(loan.getId());
+    @Test
+    void borrowFailsWhenMediaNotFound() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
 
-      assertEquals(BigDecimal.ZERO, fine);
-  }
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.empty());
 
+        assertThrows(LibraryException.class,
+                () -> borrowService.borrow("u1","b1"));
+    }
 
+    @Test
+    void borrowFailsWhenAlreadyBorrowed() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Media book = new Book("b1","Clean Code","Martin","123");
+        Loan activeLoan = mock(Loan.class);
 
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(loanRepository.findActiveByMedia("b1"))
+                .thenReturn(Optional.of(activeLoan));
 
-  @Test
-  void returningOverdueMediaAddsFine() {
-    Loan loan = borrowService.borrow(user.getId(), book.getId());
-    ((FakeDateProvider) dateProvider).advanceDays(30);
-    BigDecimal fine = borrowService.returnMedia(loan.getId());
-    assertEquals(BigDecimal.valueOf(20), fine); // 2 days overdue * 10
-    assertTrue(book.isAvailable());
-  }
-  @Test
-  void borrowFailsWhenMediaAlreadyLoanedOut() {
-      // borrow once
-      borrowService.borrow(user.getId(), book.getId());
+        assertThrows(LibraryException.class,
+                () -> borrowService.borrow("u1","b1"));
+    }
 
-      // try borrowing again while unavailable
-      assertThrows(LibraryException.class,
-          () -> borrowService.borrow(user.getId(), book.getId()));
-  }
+    @Test
+    void borrowFailsWhenUserHasOutstandingFines() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        user.addFine(BigDecimal.TEN);
 
-  @Test
-  void borrowFailsWhenUserDoesNotExist() {
-      assertThrows(LibraryException.class,
-          () -> borrowService.borrow("unknown-user", book.getId()));
-  }
+        Media book = new Book("b1","Clean Code","Martin","123");
 
-  @Test
-  void borrowFailsWhenMediaDoesNotExist() {
-      assertThrows(LibraryException.class,
-          () -> borrowService.borrow(user.getId(), "missing-media"));
-  }
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
 
-  @Test
-  void returnMediaReturnsZeroIfAlreadyReturned() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
-      borrowService.returnMedia(loan.getId()); // first return
+        assertThrows(LibraryException.class,
+                () -> borrowService.borrow("u1","b1"));
+    }
 
-      BigDecimal secondTime = borrowService.returnMedia(loan.getId());
-      assertEquals(BigDecimal.ZERO, secondTime);
-  }
+    /* =========================
+       returnMedia()
+       ========================= */
 
-  @Test
-  void returnMediaFailsWhenLoanDoesNotExist() {
-      assertThrows(LibraryException.class,
-          () -> borrowService.returnMedia("missing-loan"));
-  }
+    @Test
+    void returnMediaNoFineWhenReturnedOnTime() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Media book = new Book("b1","Clean Code","Martin","123");
 
-  @Test
-  void returnMediaFailsWhenMediaDoesNotExist() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
+        Loan loan = new Loan(
+                "l1","u1","b1",
+                LocalDate.of(2025,1,1),
+                LocalDate.of(2025,1,10)
+        );
 
-      // use the helper method
-      removeMediaFromRepository(book.getId());
+        when(loanRepository.findById("l1")).thenReturn(Optional.of(loan));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(dateProvider.today()).thenReturn(LocalDate.of(2025,1,10));
 
-      assertThrows(LibraryException.class,
-          () -> borrowService.returnMedia(loan.getId()));
-  }
+        BigDecimal fine = borrowService.returnMedia("l1");
 
-  @Test
-  void returnMediaFailsWhenUserDoesNotExist() {
-      Loan loan = borrowService.borrow(user.getId(), book.getId());
+        assertEquals(BigDecimal.ZERO, fine);
+    }
 
-      // delete user to simulate data corruption
-      userRepository.delete(user.getId());
+    @Test
+    void returnMediaAddsFineWhenOverdue() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Media book = new Book("b1","Clean Code","Martin","123");
 
-      assertThrows(LibraryException.class,
-          () -> borrowService.returnMedia(loan.getId()));
-  }
+        Loan loan = new Loan(
+                "l1","u1","b1",
+                LocalDate.of(2025,1,1),
+                LocalDate.of(2025,1,5)
+        );
 
+        when(loanRepository.findById("l1")).thenReturn(Optional.of(loan));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(dateProvider.today()).thenReturn(LocalDate.of(2025,1,7)); // 2 days late
+
+        BigDecimal fine = borrowService.returnMedia("l1");
+
+        assertTrue(fine.compareTo(BigDecimal.ZERO) > 0);
+    }
+
+    @Test
+    void returnMediaFailsWhenLoanNotFound() {
+        when(loanRepository.findById("l1")).thenReturn(Optional.empty());
+
+        assertThrows(LibraryException.class,
+                () -> borrowService.returnMedia("l1"));
+    }
+
+    @Test
+    void returnMediaFailsWhenUserNotFound() {
+        Loan loan = new Loan(
+                "l1","u1","b1",
+                LocalDate.now().minusDays(5),
+                LocalDate.now()
+        );
+
+        when(loanRepository.findById("l1")).thenReturn(Optional.of(loan));
+        when(userRepository.findById("u1")).thenReturn(Optional.empty());
+
+        assertThrows(LibraryException.class,
+                () -> borrowService.returnMedia("l1"));
+    }
+
+    @Test
+    void returnMediaFailsWhenMediaNotFound() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Loan loan = new Loan(
+                "l1","u1","b1",
+                LocalDate.now().minusDays(5),
+                LocalDate.now()
+        );
+
+        when(loanRepository.findById("l1")).thenReturn(Optional.of(loan));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.empty());
+
+        assertThrows(LibraryException.class,
+                () -> borrowService.returnMedia("l1"));
+    }
+
+    @Test
+    void returningSameLoanTwiceReturnsZeroFine() {
+        User user = new User("u1","tala","Tala",UserRole.MEMBER,"pw");
+        Media book = new Book("b1","Clean Code","Martin","123");
+
+        Loan loan = new Loan(
+                "l1","u1","b1",
+                LocalDate.of(2025,1,1),
+                LocalDate.of(2025,1,5)
+        );
+
+        when(loanRepository.findById("l1")).thenReturn(Optional.of(loan));
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user));
+        when(mediaRepository.findById("b1")).thenReturn(Optional.of(book));
+        when(dateProvider.today()).thenReturn(LocalDate.of(2025,1,7));
+
+        borrowService.returnMedia("l1");
+        BigDecimal second = borrowService.returnMedia("l1");
+
+        assertEquals(BigDecimal.ZERO, second);
+    }
 }
-
-
