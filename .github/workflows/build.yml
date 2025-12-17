@@ -44,6 +44,6 @@ jobs:
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
             -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/memory/**,**/repository/file/**,**/*Application.java,**/*CLI.java,**/*Main.java
-            -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/memory/**,**/repository/file/**,**/*Application.java,**/*CLI.java,**/*Main.java
+            -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/**,**/*CLI.java,**/*Main.jav
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
