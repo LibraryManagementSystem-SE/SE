@@ -222,11 +222,17 @@ public class FileMediaRepository implements MediaRepository {
 
   }
 
+
   @Override
-  public void delete(String id) {
-	// TODO Auto-generated method stub
-	
+  public synchronized void delete(String id) {
+      List<Media> all = new ArrayList<>(findAll());
+      boolean removed = all.removeIf(media -> media.getId().equals(id));
+
+      if (removed) {
+          writeAll(all);
+      }
   }
+
 }
 
 
