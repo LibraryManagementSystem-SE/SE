@@ -1,6 +1,5 @@
 package com.library.service;
 
-import com.library.domain.Loan;
 import com.library.domain.User;
 import com.library.notification.ReminderObserver;
 import com.library.repository.LoanRepository;

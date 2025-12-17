@@ -34,6 +34,7 @@ public class LibraryEnvironment {
     private final MediaRepository mediaRepository;
     private final DateProvider dateProvider;
 
+    @SuppressWarnings("java:S107")
     private LibraryEnvironment(
             AuthService authService,
             CatalogService catalogService,
@@ -68,7 +69,6 @@ public class LibraryEnvironment {
         DateProvider dateProvider = new DateProvider.System();
         FineStrategyFactory fineStrategyFactory = new FineStrategyFactory();
 
-        // Seed media if empty
         if (mediaRepository.findAll().isEmpty()) {
             mediaRepository.save(
                     new Book("B1", "Clean Code", "Robert C. Martin", "9780132350884"));
@@ -78,7 +78,6 @@ public class LibraryEnvironment {
             mediaRepository.save(new CD("C2", "Back in Black", "AC/DC"));
         }
 
-        // Core services
         AuthService authService = new AuthService(userRepository);
 
         UserService userService =
@@ -109,7 +108,6 @@ public class LibraryEnvironment {
         CatalogService catalogService =
                 new CatalogService(mediaRepository, authService);
 
-        // Seed default admin accounts
         if (userRepository.findByUsername("sally").isEmpty()) {
             userService.registerAdmin("sally", "Sally", "admin123");
         }
@@ -130,7 +128,6 @@ public class LibraryEnvironment {
                 dateProvider);
     }
 
-    // ================= Getters =================
 
     public AuthService getAuthService() {
         return authService;
