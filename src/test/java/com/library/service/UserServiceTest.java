@@ -1,3 +1,4 @@
+
 package com.library.service;
 
 import com.library.common.LibraryException;
@@ -116,6 +117,20 @@ class UserServiceTest {
 
         verify(userRepository, never()).delete(any());
     }
+    
+    @Test
+    void registerAdminFails_whenUsernameAlreadyExists() {
+        when(userRepository.findByUsername("admin"))
+                .thenReturn(Optional.of(mock(User.class)));
+
+        assertThrows(
+                LibraryException.class,
+                () -> userService.registerAdmin("admin", "Admin", "1234")
+        );
+
+        verify(userRepository, never()).save(any());
+    }
+
 
     @Test
     void listAllUsers_requiresAdmin() {
