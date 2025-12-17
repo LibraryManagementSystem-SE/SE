@@ -72,7 +72,7 @@ class UserServiceTest {
         when(loanRepository.findActiveByUser("1")).thenReturn(Collections.emptyList());
         when(user.hasOutstandingFines()).thenReturn(false);
 
-        userService.unregister("1");
+        userService.unregisterUser("1");
 
         verify(userRepository).delete("1");
     }
@@ -83,7 +83,7 @@ class UserServiceTest {
 
         assertThrows(
                 LibraryException.class,
-                () -> userService.unregister("1")
+                () -> userService.unregisterUser("1")
         );
     }
 
@@ -97,7 +97,7 @@ class UserServiceTest {
 
         assertThrows(
                 LibraryException.class,
-                () -> userService.unregister("1")
+                () -> userService.unregisterUser("1")
         );
 
         verify(userRepository, never()).delete(any());
@@ -113,7 +113,7 @@ class UserServiceTest {
 
         assertThrows(
                 LibraryException.class,
-                () -> userService.unregister("1")
+                () -> userService.unregisterUser("1")
         );
 
         verify(userRepository, never()).delete(any());

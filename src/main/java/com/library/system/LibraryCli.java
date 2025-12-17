@@ -278,7 +278,7 @@ public class LibraryCli {
     authService.requireAdmin();
     System.out.print("User id to remove: ");
     String userId = scanner.nextLine().trim();
-    userService.unregister(userId);
+    userService.unregisterUser(userId);
     System.out.println("User removed.");
   }
 

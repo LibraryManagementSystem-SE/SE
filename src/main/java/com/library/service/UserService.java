@@ -1,14 +1,17 @@
 package com.library.service;
 
-import com.library.domain.User;
-import com.library.domain.UserRole;
 import com.library.common.AuthService;
 import com.library.common.LibraryException;
+import com.library.domain.User;
+import com.library.domain.UserRole;
 import com.library.repository.LoanRepository;
 import com.library.repository.UserRepository;
 
+import java.util.Collection;
+
 /**
  * Manages user lifecycle operations.
+ * Admin-only operations are enforced via AuthService.
  */
 public class UserService {
 
@@ -28,6 +31,10 @@ public class UserService {
         this.registrationService = new UserRegistrationService(userRepository);
     }
 
+    /* =========================
+       Registration
+       ========================= */
+
     public User registerMember(String username, String name, String password) {
         return registrationService.register(
                 username,
@@ -38,6 +45,7 @@ public class UserService {
     }
 
     public User registerAdmin(String username, String name, String password) {
+        authService.requireAdmin();
         return registrationService.register(
                 username,
                 name,
@@ -46,14 +54,17 @@ public class UserService {
         );
     }
 
-    public void unregister(String userId) {
+    /* =========================
+       Admin-only management
+       ========================= */
+
+    public void unregisterUser(String userId) {
         authService.requireAdmin();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new LibraryException("User not found"));
 
-        boolean hasActiveLoans = !loanRepository.findActiveByUser(userId).isEmpty();
-        if (hasActiveLoans) {
+        if (!loanRepository.findActiveByUser(userId).isEmpty()) {
             throw new LibraryException("Cannot remove user with active loans");
         }
 
@@ -64,10 +75,14 @@ public class UserService {
         userRepository.delete(userId);
     }
 
-    public java.util.Collection<User> listAllUsers() {
+    public Collection<User> listAllUsers() {
         authService.requireAdmin();
         return userRepository.findAll();
     }
+
+    /* =========================
+       Infrastructure
+       ========================= */
 
     public UserRepository getUserRepository() {
         return userRepository;

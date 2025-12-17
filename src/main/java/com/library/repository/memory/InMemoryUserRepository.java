@@ -2,43 +2,51 @@ package com.library.repository.memory;
 
 import com.library.domain.User;
 import com.library.repository.UserRepository;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * In-memory implementation of UserRepository.
+ * Uses internal maps for fast lookup by id and username.
+ */
 public class InMemoryUserRepository implements UserRepository {
-  private final Map<String, User> byId = new ConcurrentHashMap<>();
-  private final Map<String, User> byUsername = new ConcurrentHashMap<>();
+
+  private final Map<String, User> usersById = new ConcurrentHashMap<>();
+  private final Map<String, String> usernameToId = new ConcurrentHashMap<>();
 
   @Override
   public void save(User user) {
-    byId.put(user.getId(), user);
-    byUsername.put(user.getUsername(), user);
+    usersById.put(user.getId(), user);
+    usernameToId.put(user.getUsername(), user.getId());
   }
 
   @Override
   public Optional<User> findById(String id) {
-    return Optional.ofNullable(byId.get(id));
+    return Optional.ofNullable(usersById.get(id));
   }
 
   @Override
   public Optional<User> findByUsername(String username) {
-    return Optional.ofNullable(byUsername.get(username));
+    String userId = usernameToId.get(username);
+    if (userId == null) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(usersById.get(userId));
   }
 
   @Override
   public Collection<User> findAll() {
-    return java.util.List.copyOf(byId.values());
+    return usersById.values();
   }
 
   @Override
   public void delete(String id) {
-    User removed = byId.remove(id);
+    User removed = usersById.remove(id);
     if (removed != null) {
-      byUsername.remove(removed.getUsername());
+      usernameToId.remove(removed.getUsername());
     }
   }
 }
-
-

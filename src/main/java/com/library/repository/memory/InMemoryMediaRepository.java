@@ -3,6 +3,7 @@ package com.library.repository.memory;
 import com.library.domain.Book;
 import com.library.domain.Media;
 import com.library.repository.MediaRepository;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,9 +12,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Simple in-memory storage for demo purposes.
+ * In-memory implementation of MediaRepository.
+ * Provides basic CRUD and search functionality.
  */
 public class InMemoryMediaRepository implements MediaRepository {
+
   private final Map<String, Media> mediaStore = new ConcurrentHashMap<>();
 
   @Override
@@ -28,7 +31,7 @@ public class InMemoryMediaRepository implements MediaRepository {
 
   @Override
   public Collection<Media> findAll() {
-    return List.copyOf(mediaStore.values());
+    return mediaStore.values();
   }
 
   @Override
@@ -36,27 +39,37 @@ public class InMemoryMediaRepository implements MediaRepository {
     if (query == null || query.isBlank()) {
       return new ArrayList<>(mediaStore.values());
     }
+
     String needle = query.toLowerCase();
-    List<Media> matches = new ArrayList<>();
+    List<Media> results = new ArrayList<>();
+
     for (Media media : mediaStore.values()) {
-      if (media.getTitle().toLowerCase().contains(needle)) {
-        matches.add(media);
-        continue;
-      }
-      if (media instanceof Book book) {
-        if (book.getAuthor().toLowerCase().contains(needle)
-            || book.getIsbn().toLowerCase().contains(needle)) {
-          matches.add(media);
-        }
+      if (matches(media, needle)) {
+        results.add(media);
       }
     }
-    return matches;
+
+    return results;
   }
+
   @Override
   public void delete(String id) {
-      mediaStore.remove(id);
+    mediaStore.remove(id);
   }
 
+  /**
+   * Checks whether a media item matches the given search keyword.
+   */
+  private boolean matches(Media media, String needle) {
+    if (media.getTitle().toLowerCase().contains(needle)) {
+      return true;
+    }
+
+    if (media instanceof Book book) {
+      return book.getAuthor().toLowerCase().contains(needle)
+          || book.getIsbn().toLowerCase().contains(needle);
+    }
+
+    return false;
+  }
 }
-
-

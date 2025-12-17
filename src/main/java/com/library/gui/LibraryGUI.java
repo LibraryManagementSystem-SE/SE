@@ -1819,7 +1819,7 @@ public class LibraryGUI {
                 }
 
                 // Let UserService handle the unregistration with all validations
-                environment.getUserService().unregister(userOpt.get().getId());
+                environment.getUserService().unregisterUser(userOpt.get().getId());
                 
                 // Show success message
                 JOptionPane.showMessageDialog(
