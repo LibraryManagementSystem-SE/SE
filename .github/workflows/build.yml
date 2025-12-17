@@ -34,6 +34,7 @@ jobs:
             -Dsonar.projectKey=LibraryManagementSystem-SE_SE
             -Dsonar.organization=librarymanagementsystem-se
             -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.projectVersion=1.0
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
             -Dsonar.coverage.exclusions=**/gui/**,**/system/**,**/repository/**,**/domain/**,**/notification/**,**/*Application.java,**/*CLI.java,**/*Main.java
