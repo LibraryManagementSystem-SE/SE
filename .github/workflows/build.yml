@@ -23,7 +23,7 @@ jobs:
           java-version: 17
 
       - name: Run Tests + JaCoCo
-        run: mvn clean verify
+        run: mvn clean test jacoco:report
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
@@ -35,7 +35,11 @@ jobs:
             -Dsonar.organization=librarymanagementsystem-se
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.projectVersion=1.0
+            -Dsonar.sources=src/main/java
+            -Dsonar.tests=src/test/java
+            -Dsonar.test.inclusions=**/*Test.java
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
             -Dsonar.coverage.exclusions=**/gui/**,**/system/**,**/repository/**,**/domain/**,**/notification/**,**/*Application.java,**/*CLI.java,**/*Main.java
-            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/domain/**,**/notification/**,**/test/**
+            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/domain/**,**/notification/**
+
