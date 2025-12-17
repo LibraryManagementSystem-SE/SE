@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.common.AuthService;
 import com.library.domain.Book;
 import com.library.domain.Media;
 import com.library.domain.MediaType;

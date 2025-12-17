@@ -2,6 +2,7 @@ package com.library.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.library.common.AuthService;
 import com.library.common.LibraryException;
 import com.library.domain.User;
 import com.library.domain.UserRole;
@@ -10,7 +11,7 @@ import com.library.repository.memory.InMemoryUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
+//import java.util.Optional;
 
 class AuthServiceTest {
 

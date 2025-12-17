@@ -1,10 +1,10 @@
 package com.library.gui;
-import com.library.domain.User;
 import com.library.domain.UserRole;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Media;
 import com.library.domain.MediaType;
+import com.library.domain.User;
 import com.library.domain.Loan;
 import com.library.common.LibraryException;
 import com.library.service.BorrowService;
@@ -863,7 +863,7 @@ public class LibraryGUI {
                         media.markUnavailable(); // decreases quantity and updates availability
                         environment.getMediaRepository().save(media); // persist updated quantity
                         currentUser.addLoan(loanId);
-                        environment.getAuthService().updateCurrentUser(currentUser);
+                        environment.getUserRepository().save(currentUser);
 
                         // Refresh the table so that availability is recalculated based on quantity.
                         // This keeps the same UI but ensures items disappear only when no copies remain.
@@ -1359,7 +1359,8 @@ public class LibraryGUI {
             }
 
             try {
-                environment.getAuthService().register(username, name, password);
+            	environment.getUserService().registerMember(username, name, password);
+
                 JOptionPane.showMessageDialog(
                     frame,
                     "Account created successfully! Please log in.",

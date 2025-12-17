@@ -3,7 +3,7 @@ package com.library.system;
 import com.library.domain.Media;
 import com.library.domain.OverdueReport;
 import com.library.domain.User;
-import com.library.service.AuthService;
+import com.library.common.AuthService;
 import com.library.service.BorrowService;
 import com.library.service.CatalogService;
 import com.library.service.FineService;
