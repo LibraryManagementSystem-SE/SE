@@ -1,15 +1,16 @@
 package com.library.service;
 
+import com.library.common.LibraryException;
+import com.library.domain.FineStrategyFactory;
 import com.library.domain.Loan;
 import com.library.domain.Media;
 import com.library.domain.MediaType;
 import com.library.domain.User;
-import com.library.common.LibraryException;
-import com.library.domain.FineStrategyFactory;
 import com.library.repository.LoanRepository;
 import com.library.repository.MediaRepository;
 import com.library.repository.UserRepository;
 import com.library.support.DateProvider;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,100 +20,134 @@ import java.util.UUID;
  * Handles the lifecycle of borrowing and returning media.
  */
 public class BorrowService {
-  private static final int BOOK_LOAN_DAYS = 28;
-  private static final int CD_LOAN_DAYS = 7;
 
-  private final LoanRepository loanRepository;
-  private final MediaRepository mediaRepository;
-  private final UserRepository userRepository;
-  private final DateProvider dateProvider;
-  private final FineStrategyFactory fineStrategyFactory;
+    private static final int BOOK_LOAN_DAYS = 28;
+    private static final int CD_LOAN_DAYS = 7;
 
-  public BorrowService(
-      LoanRepository loanRepository,
-      MediaRepository mediaRepository,
-      UserRepository userRepository,
-      DateProvider dateProvider,
-      FineStrategyFactory fineStrategyFactory) {
-    this.loanRepository = loanRepository;
-    this.mediaRepository = mediaRepository;
-    this.userRepository = userRepository;
-    this.dateProvider = dateProvider;
-    this.fineStrategyFactory = fineStrategyFactory;
-  }
+    private final LoanRepository loanRepository;
+    private final MediaRepository mediaRepository;
+    private final UserRepository userRepository;
+    private final DateProvider dateProvider;
+    private final FineStrategyFactory fineStrategyFactory;
 
-  public Loan borrow(String userId, String mediaId) {
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new LibraryException("User not found: " + userId));
-    Media media =
-        mediaRepository
-            .findById(mediaId)
-            .orElseThrow(() -> new LibraryException("Media not found: " + mediaId));
+    public BorrowService(
+            LoanRepository loanRepository,
+            MediaRepository mediaRepository,
+            UserRepository userRepository,
+            DateProvider dateProvider,
+            FineStrategyFactory fineStrategyFactory) {
 
-    ensureBorrowAllowed(user);
-    if (!media.isAvailable()) {
-      throw new LibraryException("Media already loaned out");
+        this.loanRepository = loanRepository;
+        this.mediaRepository = mediaRepository;
+        this.userRepository = userRepository;
+        this.dateProvider = dateProvider;
+        this.fineStrategyFactory = fineStrategyFactory;
     }
 
-    LocalDate checkoutDate = dateProvider.today();
-    int duration = media.getType() == MediaType.BOOK ? BOOK_LOAN_DAYS : CD_LOAN_DAYS;
-    Loan loan =
-        new Loan(
-            UUID.randomUUID().toString(), user.getId(), media.getId(), checkoutDate,
-            checkoutDate.plusDays(duration));
+    /* =========================
+       Borrow
+       ========================= */
 
-    loanRepository.save(loan);
-    media.markUnavailable();
-    user.addLoan(loan.getId());
-    return loan;
-  }
+    public Loan borrow(String userId, String mediaId) {
 
-  public BigDecimal returnMedia(String loanId) {
-	    Loan loan = loanRepository.findById(loanId)
-	        .orElseThrow(() -> new LibraryException("Loan not found: " + loanId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new LibraryException("User not found: " + userId));
 
-	    if (loan.isReturned()) {
-	        return BigDecimal.ZERO;
-	    }
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new LibraryException("Media not found: " + mediaId));
 
-	    LocalDate today = dateProvider.today();
+        ensureBorrowAllowed(user);
 
-	    // ✔ FIX: calculate overdue BEFORE marking returned
-	    long overdueDays = loan.daysOverdue(today);
+        if (!media.isAvailable()) {
+            throw new LibraryException("Media already loaned out");
+        }
 
-	    loan.markReturned(today);
+        LocalDate checkoutDate = dateProvider.today();
+        if (checkoutDate == null) {
+            throw new LibraryException("Invalid system date");
+        }
 
-	    Media media = mediaRepository.findById(loan.getMediaId())
-	        .orElseThrow(() -> new LibraryException("Media not found: " + loan.getMediaId()));
-	    media.markAvailable();
+        int duration =
+                media.getType() == MediaType.BOOK ? BOOK_LOAN_DAYS : CD_LOAN_DAYS;
 
-	    User user = userRepository.findById(loan.getUserId())
-	        .orElseThrow(() -> new LibraryException("User not found: " + loan.getUserId()));
-	    user.closeLoan(loan.getId());
+        Loan loan = new Loan(
+                UUID.randomUUID().toString(),
+                user.getId(),
+                media.getId(),
+                checkoutDate,
+                checkoutDate.plusDays(duration)
+        );
 
-	    BigDecimal fine =
-	        fineStrategyFactory.forType(media.getType()).calculateFine(overdueDays);
+        loanRepository.save(loan);
+        media.markUnavailable();
+        user.addLoan(loan.getId());
 
-	    user.addFine(fine);
-
-	    return fine;
-	}
-
-
-  private void ensureBorrowAllowed(User user) {
-    if (user.hasOutstandingFines()) {
-      throw new LibraryException("Outstanding fines must be paid first");
+        return loan;
     }
-    List<Loan> activeLoans = loanRepository.findActiveByUser(user.getId());
-    LocalDate today = dateProvider.today();
-    boolean hasOverdue =
-        activeLoans.stream().anyMatch(loan -> loan.isOverdue(today));
-    if (hasOverdue) {
-      throw new LibraryException("User has overdue loans");
+
+    /* =========================
+       Return
+       ========================= */
+
+    public BigDecimal returnMedia(String loanId) {
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new LibraryException("Loan not found: " + loanId));
+
+        if (loan.isReturned()) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDate today = dateProvider.today();
+        if (today == null) {
+            throw new LibraryException("Invalid system date");
+        }
+
+        // ✔ calculate overdue BEFORE marking returned
+        long overdueDays = loan.daysOverdue(today);
+
+        loan.markReturned(today);
+
+        Media media = mediaRepository.findById(loan.getMediaId())
+                .orElseThrow(() -> new LibraryException("Media not found: " + loan.getMediaId()));
+        media.markAvailable();
+
+        User user = userRepository.findById(loan.getUserId())
+                .orElseThrow(() -> new LibraryException("User not found: " + loan.getUserId()));
+        user.closeLoan(loan.getId());
+
+        BigDecimal fine =
+                fineStrategyFactory
+                        .forType(media.getType())
+                        .calculateFine(overdueDays);
+
+        user.addFine(fine);
+
+        return fine;
     }
-  }
+
+    /* =========================
+       Validation
+       ========================= */
+
+    private void ensureBorrowAllowed(User user) {
+
+        if (user.hasOutstandingFines()) {
+            throw new LibraryException("Outstanding fines must be paid first");
+        }
+
+        List<Loan> activeLoans = loanRepository.findActiveByUser(user.getId());
+        LocalDate today = dateProvider.today();
+
+        if (today == null) {
+            throw new LibraryException("Invalid system date");
+        }
+
+        boolean hasOverdue =
+                activeLoans.stream().anyMatch(loan -> loan.isOverdue(today));
+
+        if (hasOverdue) {
+            throw new LibraryException("User has overdue loans");
+        }
+    }
 }
-
-
