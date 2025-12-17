@@ -6,7 +6,7 @@
 
   <groupId>softwareProject</groupId>
   <artifactId>libraryManagementSystem</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0</version>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
@@ -18,7 +18,6 @@
   </properties>
 
   <dependencies>
-    <!-- JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -26,7 +25,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Mockito -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -45,7 +43,7 @@
   <build>
     <plugins>
 
-      <!-- JUnit 5 runner -->
+      <!-- JUnit 5 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -55,51 +53,25 @@
         </configuration>
       </plugin>
 
-      <!-- JaCoCo (IMPORTANT FIX: report runs in VERIFY) -->
+      <!-- JaCoCo -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.11</version>
-
-        <configuration>
-          <excludes>
-            <exclude>**/gui/**</exclude>
-            <exclude>**/system/**</exclude>
-            <exclude>**/repository/**</exclude>
-            <exclude>**/domain/**</exclude>
-            <exclude>**/notification/**</exclude>
-            <exclude>**/*Application*</exclude>
-            <exclude>**/*CLI*</exclude>
-            <exclude>**/*Main*</exclude>
-          </excludes>
-        </configuration>
-
         <executions>
           <execution>
-            <id>prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
           </execution>
-
           <execution>
             <id>report</id>
-            <phase>verify</phase>
+            <phase>test</phase>
             <goals>
               <goal>report</goal>
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <!-- Javadoc -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.6.3</version>
-        <configuration>
-          <failOnError>false</failOnError>
-        </configuration>
       </plugin>
 
     </plugins>
