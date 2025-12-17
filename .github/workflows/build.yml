@@ -38,13 +38,13 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         with:
           args: >
-           -Dsonar.projectKey=LibraryManagementSystem-SE_SE
-           -Dsonar.organization=librarymanagementsystem-se
-           -Dsonar.host.url=https://sonarcloud.io
-           -Dsonar.java.binaries=target/classes
-           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-           -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
-           -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
-           -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/test/**
+            -Dsonar.projectKey=LibraryManagementSystem-SE_SE
+            -Dsonar.organization=librarymanagementsystem-se
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.java.binaries=target/classes
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.coverage.exclusions=**/domain/**,**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
+            -Dsonar.exclusions=**/gui/**,**/system/**,**/repository/file/**,**/repository/memory/**,**/*Application.java,**/*CLI.java
+            -Dsonar.cpd.exclusions=**/gui/**,**/repository/**,**/test/**
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
