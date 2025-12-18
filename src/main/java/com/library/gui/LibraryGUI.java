@@ -849,7 +849,8 @@ public class LibraryGUI {
 
                         String loanId = UUID.randomUUID().toString();
                         LocalDate checkoutDate = LocalDate.now();
-                        LocalDate dueDate = checkoutDate.plusDays(28);
+                        int duration = media.getType() == MediaType.BOOK ? 28 : 7;
+                        LocalDate dueDate = checkoutDate.plusDays(duration);
 
                         Loan loan = new Loan(
                             loanId,
@@ -1849,6 +1850,75 @@ public class LibraryGUI {
             );
         }
     }
+    
+    private void sendReminderEmail(User user, List<Loan> loans) {
+        try {
+
+            LocalDate today = environment.getDateProvider().today();
+            StringBuilder message = new StringBuilder();
+            message.append("Dear ").append(user.getName()).append(",\n\n");
+            message.append("This is a friendly reminder about your borrowed items:\n\n");
+            
+            boolean hasOverdue = false;
+            boolean hasDueSoon = false;
+            
+            for (Loan loan : loans) {
+                Optional<Media> mediaOpt = environment.getMediaRepository().findById(loan.getMediaId());
+                if (mediaOpt.isEmpty()) continue;
+                
+                Media media = mediaOpt.get();
+                boolean isOverdue = loan.isOverdue(today);
+                
+                if (isOverdue) {
+                    hasOverdue = true;
+                    message.append("OVERDUE: ");
+                } else if (loan.getDueDate().isBefore(today.plusDays(3))) {
+                    hasDueSoon = true;
+                    message.append("DUE SOON: ");
+                }
+                
+                message.append(String.format("%s (%s) - Due: %s",
+                    media.getTitle(),
+                    media.getType().name(),
+                    loan.getDueDate()
+                ));
+                
+                if (isOverdue) {
+                    long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(
+                        loan.getDueDate(), today);
+                    message.append(String.format(" (%d days overdue)", daysOverdue));
+                }
+                message.append("\n");
+            }
+            
+            if (hasOverdue) {
+                message.append("\nPlease return the overdue items as soon as possible to avoid additional fines.\n");
+            } else if (hasDueSoon) {
+                message.append("\nPlease return or renew these items before the due date to avoid late fees.\n");
+            }
+            
+            message.append("\nThank you for using our library!\n");
+            message.append("Library Management System");
+            
+            // Send the notification using the correct interface
+            environment.getEmailNotifier().notify(user, message.toString());
+            
+            JOptionPane.showMessageDialog(
+                frame,
+                "Reminder has been sent to " + user.getUsername(),
+                "Reminder Sent",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                frame,
+                "Error sending reminder: " + ex.getMessage(),
+                "Notification Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
 
     private void showUserDetails(String username) {
         try {
@@ -1890,10 +1960,54 @@ public class LibraryGUI {
             gbc.gridx = 1;
             infoPanel.add(new JLabel("$" + user.getFineBalance()), gbc);
 
+            // Add Email Reminder button
+            gbc.gridx = 0; gbc.gridy = 4;
+            gbc.gridwidth = 2;
+            gbc.anchor = GridBagConstraints.CENTER;
             String[] cols = {"Title", "Type", "Borrowed On", "Due Date", "Status"};
             DefaultTableModel model = new DefaultTableModel(cols, 0);
 
+            // Get user's active loans
             List<Loan> loans = environment.getLoanRepository().findActiveByUser(user.getId());
+            
+            // Add Email Reminder button
+            gbc.gridx = 0; gbc.gridy = 4;
+            gbc.gridwidth = 2;
+            gbc.anchor = GridBagConstraints.CENTER;
+            JButton emailButton = new JButton("Send Reminder Email");
+            emailButton.addActionListener(e -> {
+                String email = JOptionPane.showInputDialog(
+                    frame,
+                    "Enter the recipient email address:",
+                    "Send Reminder Email",
+                    JOptionPane.PLAIN_MESSAGE
+                );
+                if (email == null) {
+                    return; // cancelled
+                }
+                email = email.trim();
+                if (email.isEmpty() || !email.contains("@")) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Please enter a valid email address.",
+                        "Invalid Email",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+
+                User emailTarget = new User(
+                    "temp-email",
+                    email,
+                    user.getName(),
+                    user.getRole(),
+                    ""
+                );
+                sendReminderEmail(emailTarget, loans);
+            });
+            infoPanel.add(emailButton, gbc);
+            gbc.gridwidth = 1; // Reset gridwidth
+            gbc.anchor = GridBagConstraints.WEST; // Reset anchor
             for (Loan loan : loans) {
                 Optional<Media> mediaOpt = environment.getMediaRepository().findById(loan.getMediaId());
                 if (mediaOpt.isEmpty()) {

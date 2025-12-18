@@ -1,10 +1,3 @@
-B5;The Catcher in the Rye;J.D. Salinger;9780316769488;5
-B6;Harry Potter and the Sorcerer's Stone;J.K. Rowling;9780590353427;5
-B7;The Hobbit;J.R.R. Tolkien;9780547928227;5
-B8;The Lord of the Rings;J.R.R. Tolkien;9780618640157;5
-B9;The Alchemist;Paulo Coelho;9780061122415;5
-B10;The Da Vinci Code;Dan Brown;9780307474278;5
-B11;The Hunger Games;Suzanne Collins;9780439023528;5
 B12;The Fault in Our Stars;John Green;9780525478812;5
 B13;Harry Potter and the Chamber of Secrets;J.K. Rowling;9780439064873;5
 B14;Harry Potter and the Prisoner of Azkaban;J.K. Rowling;9780439136365;5
@@ -43,3 +36,10 @@ B3;The Great Gatsby;F. Scott Fitzgerald;9780743273565;4
 B19;Twilight;Stephenie Meyer;9780316015843;4
 B17;Divergent;Veronica Roth;9780062024039;4
 60b9ef3e-a933-426b-a719-9509d2fef931;Sun;Sally;555;0
+B5;The Catcher in the Rye;J.D. Salinger;9780316769488;4
+B7;The Hobbit;J.R.R. Tolkien;9780547928227;4
+B8;The Lord of the Rings;J.R.R. Tolkien;9780618640157;4
+B9;The Alchemist;Paulo Coelho;9780061122415;4
+B11;The Hunger Games;Suzanne Collins;9780439023528;4
+B6;Harry Potter and the Sorcerer's Stone;J.K. Rowling;9780590353427;3
+B10;The Da Vinci Code;Dan Brown;9780307474278;4
