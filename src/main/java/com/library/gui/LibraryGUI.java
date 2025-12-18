@@ -14,11 +14,8 @@ import com.library.system.LibraryEnvironment;
 import com.library.support.DateProvider;
 
 import javax.swing.*;
-//import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
-//import javax.swing.ListSelectionModel;
 import java.awt.*;
-//import java.awt.event.*;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -53,17 +50,14 @@ public class LibraryGUI {
      * @param args command-line arguments (unused)
      */
     public static void main(String[] args) {
-        // Set the application to use the system look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Run the GUI on the Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
             try {
-                // Initialize the environment (same as in the CLI version)
                 LibraryEnvironment environment = LibraryEnvironment.bootstrap();
                 new LibraryGUI(environment);
             } catch (Exception e) {
@@ -83,20 +77,17 @@ public class LibraryGUI {
    
     private void initialize() {
         try {
-            // Set system look and feel for a native appearance
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Create the main window
         frame = new JFrame("Library Management System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 700);
         frame.setMinimumSize(new Dimension(800, 600));
         frame.setLocationRelativeTo(null);
 
-        // Set application icon
         try {
             ImageIcon icon = new ImageIcon(getClass().getResource("/images/library-icon.png"));
             frame.setIconImage(icon.getImage());
@@ -117,11 +108,9 @@ public class LibraryGUI {
             frame.remove(currentPanel);
         }
 
-        // Create the main panel with card layout
         currentPanel = new JPanel(new CardLayout());
         currentPanel.setBackground(new Color(240, 240, 245));
 
-        // Create the login card
         JPanel loginCard = new JPanel(new GridBagLayout());
         loginCard.setBackground(Color.WHITE);
         loginCard.setBorder(BorderFactory.createEmptyBorder(40, 60, 60, 60));
@@ -157,7 +146,6 @@ public class LibraryGUI {
         styleTextField(usernameField);
         loginCard.add(usernameField, gbc);
 
-        // Password
         gbc.gridy = 3;
         gbc.insets = new Insets(20, 0, 5, 0);
         JLabel passLabel = new JLabel("PASSWORD");
@@ -170,7 +158,6 @@ public class LibraryGUI {
         stylePasswordField(passwordField);
         loginCard.add(passwordField, gbc);
 
-        // Login Button
         gbc.gridy = 5;
         gbc.insets = new Insets(30, 0, 10, 0);
         JButton loginButton = new JButton("SIGN IN");
@@ -178,7 +165,6 @@ public class LibraryGUI {
         loginButton.addActionListener(e -> attemptLogin());
         loginCard.add(loginButton, gbc);
 
-        // Sign Up Button
         gbc.gridy = 6;
         gbc.insets = new Insets(0, 0, 15, 0);
         JButton signUpButton = new JButton("CREATE NEW ACCOUNT");
@@ -186,14 +172,11 @@ public class LibraryGUI {
         signUpButton.addActionListener(e -> showSignUpPanel());
         loginCard.add(signUpButton, gbc);
 
-        // Add the login card to the main panel
         currentPanel.add(loginCard, "login");
         frame.add(currentPanel);
 
-        // Make sure the password field can be submitted with Enter key
         passwordField.addActionListener(e -> attemptLogin());
 
-        // Refresh the frame
         frame.revalidate();
         frame.repaint();
     }
@@ -227,7 +210,6 @@ public class LibraryGUI {
         JButton button = new JButton("<html><div style='text-align:center;'>" + 
             "<span style='font-size:24px;'>" + icon + "</span><br/>" + text + "</div>");
         
-        // Base styling
         button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         button.setForeground(new Color(44, 62, 80));
         button.setBackground(new Color(236, 240, 241));
@@ -238,7 +220,6 @@ public class LibraryGUI {
             BorderFactory.createEmptyBorder(20, 10, 20, 10)
         ));
         
-        // Hover effects
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(new Color(230, 233, 235));
@@ -251,7 +232,6 @@ public class LibraryGUI {
             }
         });
         
-        // Click effect
         button.addChangeListener(e -> {
             if (button.getModel().isPressed()) {
                 button.setBackground(new Color(220, 223, 225));
@@ -260,7 +240,6 @@ public class LibraryGUI {
             }
         });
         
-        // Make the button non-opaque for better hover effects
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         
@@ -280,23 +259,18 @@ public class LibraryGUI {
         }
 
         try {
-            // Authenticate the user
             User user = environment.getAuthService().login(username, new String(password));
 
-            // Clear the password field for security
             passwordField.setText("");
 
-            // Show success message
             JOptionPane.showMessageDialog(frame,
                 "Login successful! Welcome, " + user.getName() + ".",
                 "Login Successful",
                 JOptionPane.INFORMATION_MESSAGE);
 
-            // Show main dashboard with user info
             showMainDashboard(user.getName(), user.isAdmin());
 
         } catch (LibraryException ex) {
-            // Clear the password field on failed login
             passwordField.setText("");
 
             JOptionPane.showMessageDialog(frame,
@@ -304,7 +278,6 @@ public class LibraryGUI {
                 "Login Failed",
                 JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
-            // Clear the password field on error
             passwordField.setText("");
 
             JOptionPane.showMessageDialog(frame,
@@ -323,25 +296,20 @@ public class LibraryGUI {
 
 
     private void showAdminDashboard(String username) {
-        // Clear the current panel
         frame.remove(currentPanel);
         
-        // Create main panel with border layout
         currentPanel = new JPanel(new BorderLayout());
         currentPanel.setBackground(Color.WHITE);
         
-        // Create header panel
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(52, 73, 94));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         
-        // Add welcome message
         JLabel welcomeLabel = new JLabel("Welcome, " + username + " (Admin)");
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         welcomeLabel.setForeground(Color.WHITE);
         headerPanel.add(welcomeLabel, BorderLayout.WEST);
         
-        // Add logout button
         JButton logoutButton = new JButton("Logout");
         styleButton(logoutButton, new Color(231, 76, 60), Color.WHITE);
         logoutButton.addActionListener(e -> showLoginPanel());
@@ -351,17 +319,14 @@ public class LibraryGUI {
         buttonPanel.add(logoutButton);
         headerPanel.add(buttonPanel, BorderLayout.EAST);
         
-        // Create content panel with card layout for different views
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Create main dashboard title
         JLabel titleLabel = new JLabel("Admin Dashboard", JLabel.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(44, 62, 80));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
         
-        // Create buttons panel with grid layout
         JPanel buttonsPanel = new JPanel(new GridLayout(2, 3, 20, 20));
         buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
         buttonsPanel.setOpaque(false);
@@ -372,7 +337,6 @@ public class LibraryGUI {
         
         JButton addMediaBtn = createDashboardButton("Add Media", "➕");
         addMediaBtn.addActionListener(e -> {
-            // Show dialog to add new media
             showAddMediaDialog();
         });
         
@@ -394,7 +358,6 @@ public class LibraryGUI {
         JButton listMediaBtn = createDashboardButton("List All Media", "📖");
         listMediaBtn.addActionListener(e -> showSearchMediaPanel());
         
-        // Add buttons to panel
         buttonsPanel.add(manageUsersBtn);
         buttonsPanel.add(addMediaBtn);
         buttonsPanel.add(viewReportsBtn);
@@ -436,7 +399,6 @@ public class LibraryGUI {
         JComboBox<String> typeCombo = new JComboBox<>(new String[]{"Book", "CD"});
         formPanel.add(typeCombo, gbc);
         
-        // Title
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Title:"), gbc);
@@ -445,7 +407,6 @@ public class LibraryGUI {
         JTextField titleField = new JTextField(20);
         formPanel.add(titleField, gbc);
         
-        // Author/Artist
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Author/Artist:"), gbc);
@@ -454,7 +415,6 @@ public class LibraryGUI {
         JTextField creatorField = new JTextField(20);
         formPanel.add(creatorField, gbc);
         
-        // ISBN (for books)
         gbc.gridx = 0;
         gbc.gridy++;
         JLabel isbnLabel = new JLabel("ISBN:");
@@ -464,7 +424,6 @@ public class LibraryGUI {
         JTextField isbnField = new JTextField(20);
         formPanel.add(isbnField, gbc);
         
-        // Update fields based on media type selection
         typeCombo.addActionListener(e -> {
             boolean isBook = typeCombo.getSelectedItem().equals("Book");
             isbnLabel.setVisible(isBook);
@@ -474,11 +433,9 @@ public class LibraryGUI {
             dialog.pack();
         });
         
-        // Set initial state
         isbnLabel.setVisible(true);
         isbnField.setVisible(true);
         
-        // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton cancelButton = new JButton("Cancel");
         JButton addButton = new JButton("Add");
@@ -498,23 +455,20 @@ public class LibraryGUI {
                 return;
             }
             
-         // Replace the TODO section in showAddMediaDialog() with this code:
             try {
                 if (type.equals("Book")) {
-                    // Create a new book with the provided ISBN
                     Book book = new Book(
-                        UUID.randomUUID().toString(), // Internal unique ID
+                        UUID.randomUUID().toString(), 
                         title,
-                        creator, // This is the author for books
-                        isbn     // Using the ISBN from the input field
+                        creator, 
+                        isbn    
                     );
                     environment.getMediaRepository().save(book);
                 } else {
-                    // For CDs, we don't need ISBN
                     CD cd = new CD(
-                        UUID.randomUUID().toString(), // Internal unique ID
+                        UUID.randomUUID().toString(), 
                         title,
-                        creator  // This is the artist for CDs
+                        creator  
                     );
                     environment.getMediaRepository().save(cd);
                 }
@@ -525,7 +479,6 @@ public class LibraryGUI {
                     JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
 
-                // Refresh the admin dashboard to show the new item
                 if (currentPanel != null) {
                     showAdminDashboard(environment.getAuthService().getCurrentUser().get().getUsername());
                 }
@@ -534,7 +487,7 @@ public class LibraryGUI {
                     "Error adding media: " + ex.getMessage(), 
                     "Error", 
                     JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace(); // This will help us see any errors in the console
+                ex.printStackTrace(); 
             }
         });
         
@@ -556,46 +509,37 @@ public class LibraryGUI {
      */
 
     private void showMainDashboard(String username, boolean isAdmin) {
-        // Clear the current panel
         frame.remove(currentPanel);
 
-        // If user is admin, show admin dashboard
         if (isAdmin) {
             showAdminDashboard(username);
             return;
         }
         
-        // Create main panel with border layout
         currentPanel = new JPanel(new BorderLayout());
         currentPanel.setBackground(Color.WHITE);
 
-        // Create header panel
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(52, 152, 219));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        // Add welcome message
         JLabel welcomeLabel = new JLabel("Welcome, " + username + (isAdmin ? " (Admin)" : " (User)"));
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         welcomeLabel.setForeground(Color.WHITE);
         headerPanel.add(welcomeLabel, BorderLayout.WEST);
 
-        // Create content panel
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Create main dashboard title
         JLabel titleLabel = new JLabel("Library Dashboard", JLabel.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(44, 62, 80));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
 
-        // Create buttons panel with grid layout
         JPanel buttonsPanel = new JPanel(new GridLayout(2, 2, 20, 20));
         buttonsPanel.setBorder(BorderFactory.createEmptyBorder(20, 80, 40, 80));
         buttonsPanel.setOpaque(false);
 
-        // Create and add buttons with full functionality
         JButton searchBooksBtn = createDashboardButton("Search Media", "🔍");
         searchBooksBtn.addActionListener(e -> showSearchMediaPanel());
 
@@ -616,12 +560,10 @@ public class LibraryGUI {
         contentPanel.add(titleLabel, BorderLayout.NORTH);
         contentPanel.add(buttonsPanel, BorderLayout.CENTER);
 
-        // Create bottom buttons panel (Contact Us, Pay Fine, Logout)
         JPanel bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
         bottomButtonPanel.setBackground(Color.WHITE);
         bottomButtonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(200, 200, 200)));
 
-        // Create and style the bottom buttons
         JButton contactUsBtn = new JButton("Contact Us");
         styleButton(contactUsBtn, new Color(155, 89, 182), Color.WHITE);
         contactUsBtn.addActionListener(e -> showContactUsDialog());
@@ -634,12 +576,10 @@ public class LibraryGUI {
         styleButton(logoutButton, new Color(231, 76, 60), Color.WHITE);
         logoutButton.addActionListener(e -> showLoginPanel());
         
-        // Add buttons to bottom panel
         bottomButtonPanel.add(contactUsBtn);
         bottomButtonPanel.add(payFineBtn);
         bottomButtonPanel.add(logoutButton);
 
-        // Add footer
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         footerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         footerPanel.setBackground(Color.WHITE);
@@ -648,12 +588,10 @@ public class LibraryGUI {
         footerLabel.setForeground(new Color(100, 100, 100));
         footerPanel.add(footerLabel);
 
-        // Create a container for the main content and bottom buttons
         JPanel mainContentPanel = new JPanel(new BorderLayout());
         mainContentPanel.add(contentPanel, BorderLayout.CENTER);
         mainContentPanel.add(bottomButtonPanel, BorderLayout.SOUTH);
 
-        // Add all components to the main panel
         currentPanel.add(headerPanel, BorderLayout.NORTH);
         currentPanel.add(mainContentPanel, BorderLayout.CENTER);
         currentPanel.add(footerPanel, BorderLayout.SOUTH);
@@ -664,21 +602,17 @@ public class LibraryGUI {
     }
     private void showMyAccountPanel() {
         try {
-            // Get current user
             User currentUser = environment.getAuthService().getCurrentUser()
                 .orElseThrow(() -> new LibraryException("User not logged in"));
             
-            // Create the main panel
             JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
             mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             
-            // User info panel
             JPanel infoPanel = new JPanel(new GridBagLayout());
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.anchor = GridBagConstraints.WEST;
             gbc.insets = new Insets(5, 5, 5, 15);
             
-            // Add user info
             gbc.gridx = 0; gbc.gridy = 0;
             infoPanel.add(new JLabel("<html><b>Username:</b></html>"), gbc);
             gbc.gridx = 1;
@@ -699,11 +633,9 @@ public class LibraryGUI {
             gbc.gridx = 1;
             infoPanel.add(new JLabel("$" + currentUser.getFineBalance()), gbc);  // Changed getFineAmount() to getFineBalance()
             
-            // Create borrowed items table
             String[] columnNames = {"Title", "Type", "Borrowed On", "Due Date", "Status"};
             DefaultTableModel model = new DefaultTableModel(columnNames, 0);
             
-            // Get user's loans
             List<Loan> userLoans = environment.getLoanRepository().findActiveByUser(currentUser.getId());
             for (Loan loan : userLoans) {
                 Optional<Media> mediaOpt = environment.getMediaRepository().findById(loan.getMediaId());
@@ -725,12 +657,10 @@ public class LibraryGUI {
             JTable loansTable = new JTable(model);
             JScrollPane scrollPane = new JScrollPane(loansTable);
             
-            // Add components to main panel
             mainPanel.add(infoPanel, BorderLayout.NORTH);
             mainPanel.add(new JLabel("Borrowed Items:", JLabel.LEFT), BorderLayout.CENTER);
             mainPanel.add(scrollPane, BorderLayout.CENTER);
             
-            // Show in dialog
             JDialog dialog = new JDialog(frame, "My Account", true);
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             dialog.getContentPane().add(mainPanel);
@@ -753,18 +683,13 @@ public class LibraryGUI {
      */
     private void showBorrowMediaPanel() {
 
-        // MAIN PANEL
         JPanel borrowPanel = new JPanel(new BorderLayout(10, 10));
         borrowPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // TITLE
         JLabel titleLabel = new JLabel("Available Media for Borrowing", JLabel.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
 
-        // -------------------------------
-        // 🔍 SEARCH BAR + TYPE FILTER
-        // -------------------------------
         JPanel searchBar = new JPanel(new BorderLayout(5, 5));
         JTextField searchField = new JTextField(20);
         JComboBox<String> typeFilter = new JComboBox<>(new String[]{"All", "Books", "CDs"});
@@ -779,23 +704,18 @@ public class LibraryGUI {
 
         searchBar.add(rightSide, BorderLayout.EAST);
 
-        // -------------------------------
-        // TABLE MODEL
-        // -------------------------------
         String[] columnNames = {"Title", "Type", "Author/Artist", "Availability", "Action"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only Borrow button
+                return column == 4; 
             }
         };
 
         JTable mediaTable = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(mediaTable);
 
-        // -------------------------------
-        // BUTTON RENDERER + EDITOR
-        // -------------------------------
+       
         mediaTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -811,7 +731,6 @@ public class LibraryGUI {
                         button.setBackground(UIManager.getColor("Button.background"));
                         button.setForeground(UIManager.getColor("Button.foreground"));
                     }
-                    // Informational tooltip: remaining copies, without changing layout.
                     Map<String, Integer> qtyMap =
                         (Map<String, Integer>) table.getClientProperty("quantityByTitle");
                     String mediaTitle = (String) table.getValueAt(row, 0);
@@ -830,7 +749,6 @@ public class LibraryGUI {
                 JButton button = new JButton("Borrow");
                 button.addActionListener(e -> {
                     try {
-                        // End editing before mutating the table model to avoid index issues.
                         fireEditingStopped();
 
                         String mediaTitle = (String) model.getValueAt(row, 0);
@@ -861,13 +779,12 @@ public class LibraryGUI {
                         );
 
                         environment.getLoanRepository().save(loan);
-                        media.markUnavailable(); // decreases quantity and updates availability
-                        environment.getMediaRepository().save(media); // persist updated quantity
+                        media.markUnavailable(); 
+                        environment.getMediaRepository().save(media); 
                         currentUser.addLoan(loanId);
                         environment.getUserRepository().save(currentUser);
 
-                        // Refresh the table so that availability is recalculated based on quantity.
-                        // This keeps the same UI but ensures items disappear only when no copies remain.
+                        
                         ((DefaultTableModel) table.getModel()).setRowCount(0);
                         ((Runnable) table.getClientProperty("loadFilteredMedia")).run();
 
@@ -887,7 +804,6 @@ public class LibraryGUI {
                         );
                     }
                 });
-                // Keep tooltip in editor as well (no UI changes).
                 Map<String, Integer> qtyMap =
                     (Map<String, Integer>) table.getClientProperty("quantityByTitle");
                 String mediaTitle = (String) table.getValueAt(row, 0);
@@ -902,9 +818,7 @@ public class LibraryGUI {
             }
         });
 
-        // -------------------------------
-        // FILTERED LOADER FUNCTION
-        // -------------------------------
+       
         Runnable loadFilteredMedia = () -> {
             model.setRowCount(0);
 
@@ -919,13 +833,11 @@ public class LibraryGUI {
 
                     if (!media.isAvailable()) continue;
 
-                    // TYPE FILTER
                     if (!typeChoice.equals("All")) {
                         if (typeChoice.equals("Books") && media.getType() != MediaType.BOOK) continue;
                         if (typeChoice.equals("CDs") && media.getType() != MediaType.CD) continue;
                     }
 
-                    // SEARCH FILTER
                     String searchable = (
                         media.getTitle() + " " +
                         (media instanceof Book ? ((Book) media).getAuthor() : "") + " " +
@@ -951,7 +863,6 @@ public class LibraryGUI {
                     });
                 }
 
-                // Expose quantities for tooltips without altering the table layout.
                 mediaTable.putClientProperty("quantityByTitle", qtyMap);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(
@@ -963,10 +874,8 @@ public class LibraryGUI {
             }
         };
 
-        // Make the loader accessible from the cell editor without changing the UI structure.
         mediaTable.putClientProperty("loadFilteredMedia", loadFilteredMedia);
 
-        // EVENTS
         searchButton.addActionListener(e -> loadFilteredMedia.run());
         searchField.addActionListener(e -> loadFilteredMedia.run());
         typeFilter.addActionListener(e -> loadFilteredMedia.run());
@@ -992,33 +901,28 @@ public class LibraryGUI {
      */
 
     private void showSearchMediaPanel() {
-        // Create the main panel
         JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
         searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Create search components
         JPanel searchBoxPanel = new JPanel(new BorderLayout(5, 5));
         JTextField searchField = new JTextField(30);
         JButton searchButton = new JButton("Search");
         JComboBox<String> searchType = new JComboBox<>(new String[]{"All", "Books", "CDs"});
         
-        // Create results table
         String[] columnNames = {"Title", "Type", "Author/Artist", "Status", "Action"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only the action column is editable
+                return column == 4;
             }
         };
         JTable resultsTable = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(resultsTable);
         
-        // Method to update the table based on search criteria
         Runnable updateTable = () -> {
             String searchTerm = searchField.getText().trim().toLowerCase();
             String typeFilter = (String) searchType.getSelectedItem();
             
-            // Clear existing rows
             model.setRowCount(0);
             
             try {
@@ -1030,7 +934,6 @@ public class LibraryGUI {
                 }
                 
                 for (Media media : searchResults) {
-                    // Apply type filter
                     if (!"All".equals(typeFilter)) {
                         if (typeFilter.equals("Books") && media.getType() != MediaType.BOOK) {
                             continue;
@@ -1104,7 +1007,6 @@ public class LibraryGUI {
             User currentUser = environment.getAuthService().getCurrentUser()
                 .orElseThrow(() -> new LibraryException("User not logged in"));
             
-            // Get current fine amount
             BigDecimal currentFine = currentUser.getFineAmount();
             
             if (currentFine.compareTo(BigDecimal.ZERO) <= 0) {
@@ -1225,13 +1127,10 @@ public class LibraryGUI {
             "<p>For immediate assistance, please call our support line during business hours.</p>" +
             "</div></html>";
 
-        // Create and customize the JOptionPane
         JLabel iconLabel = new JLabel();
         try {
-            // Try to load a custom icon
             ImageIcon icon = new ImageIcon(getClass().getResource("/images/contact-icon.png"));
             if (icon.getImage() != null) {
-                // Resize the icon if needed
                 Image image = icon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
                 iconLabel.setIcon(new ImageIcon(image));
             }
@@ -1246,7 +1145,7 @@ public class LibraryGUI {
             JOptionPane.INFORMATION_MESSAGE         
         );
 
-        return null;  // Return value not used
+        return null;  
     }
     /**
      * Displays the sign-up panel allowing new users to create an account.
@@ -1262,7 +1161,6 @@ public class LibraryGUI {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title
         JLabel titleLabel = new JLabel("Create New Account");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(44, 62, 80));
@@ -1273,7 +1171,6 @@ public class LibraryGUI {
         gbc.insets = new Insets(0, 0, 30, 0);
         signUpPanel.add(titleLabel, gbc);
 
-        // Username
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -1289,7 +1186,6 @@ public class LibraryGUI {
         gbc.gridy = 2;
         signUpPanel.add(newUsernameField, gbc);
 
-        // Name
         gbc.gridy = 3;
         gbc.insets = new Insets(20, 0, 5, 0);
         JLabel nameLabel = new JLabel("FULL NAME");
@@ -1302,7 +1198,6 @@ public class LibraryGUI {
         gbc.gridy = 4;
         signUpPanel.add(nameField, gbc);
 
-        // Password
         gbc.gridy = 5;
         gbc.insets = new Insets(20, 0, 5, 0);
         JLabel passLabel = new JLabel("PASSWORD");
@@ -1315,7 +1210,6 @@ public class LibraryGUI {
         gbc.gridy = 6;
         signUpPanel.add(newPasswordField, gbc);
 
-        // Confirm Password
         gbc.gridy = 7;
         gbc.insets = new Insets(20, 0, 5, 0);
         JLabel confirmPassLabel = new JLabel("CONFIRM PASSWORD");
@@ -1328,7 +1222,6 @@ public class LibraryGUI {
         gbc.gridy = 8;
         signUpPanel.add(confirmPasswordField, gbc);
 
-        // Sign Up Button
         gbc.gridy = 9;
         gbc.insets = new Insets(30, 0, 10, 0);
         JButton signUpButton = new JButton("CREATE ACCOUNT");
@@ -1380,7 +1273,6 @@ public class LibraryGUI {
         });
         signUpPanel.add(signUpButton, gbc);
 
-        // Back to Login Button
         gbc.gridy = 10;
         gbc.insets = new Insets(10, 0, 0, 0);
         JButton backButton = new JButton("Back to Login");
@@ -1388,7 +1280,6 @@ public class LibraryGUI {
         backButton.addActionListener(e -> showLoginPanel());
         signUpPanel.add(backButton, gbc);
 
-        // Clear the current panel and add the sign-up panel
         frame.remove(currentPanel);
         currentPanel = new JPanel(new BorderLayout());
         currentPanel.add(signUpPanel, BorderLayout.CENTER);
@@ -1399,12 +1290,10 @@ public class LibraryGUI {
 
     private void showReturnMediaPanel() {
         try {
-            // Get current user ID
             String currentUserId = environment.getAuthService().getCurrentUser()
                 .orElseThrow(() -> new LibraryException("User not logged in"))
                 .getId();
 
-            // Get loan repository and find active loans
             LoanRepository loanRepo = environment.getLoanRepository();
             List<Loan> activeLoans = loanRepo.findActiveByUser(currentUserId);
 
@@ -1417,13 +1306,10 @@ public class LibraryGUI {
                 );
                 return;
             }
-
-            // Create the main panel
             JPanel mainPanel = new JPanel(new BorderLayout());
             mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             mainPanel.setPreferredSize(new Dimension(800, 400));
 
-            // Create table model
             String[] columnNames = {"Title", "Type", "Borrowed On", "Due Date", "Status", "Action"};
             DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
                 @Override
@@ -1438,7 +1324,6 @@ public class LibraryGUI {
                 }
             };
 
-            // Populate table with loan data
             MediaRepository mediaRepo = environment.getMediaRepository();
             DateProvider dateProvider = environment.getDateProvider();
 
@@ -1460,17 +1345,13 @@ public class LibraryGUI {
                 });
             }
 
-            // Create table with the model
             JTable table = new JTable(model);
             table.setRowHeight(40);
             table.setFillsViewportHeight(true);
 
-            // Set up the button column
             TableColumn buttonColumn = table.getColumnModel().getColumn(5);
             buttonColumn.setCellRenderer(new ButtonRenderer());
             buttonColumn.setCellEditor(new ButtonEditor(new JCheckBox(), table));
-
-            // Configure column widths
             table.getColumnModel().getColumn(0).setPreferredWidth(200); // Title
             table.getColumnModel().getColumn(1).setPreferredWidth(50);  // Type
             table.getColumnModel().getColumn(2).setPreferredWidth(100); // Borrowed
@@ -1478,7 +1359,6 @@ public class LibraryGUI {
             table.getColumnModel().getColumn(4).setPreferredWidth(80);  // Status
             table.getColumnModel().getColumn(5).setPreferredWidth(80);  // Action
 
-            // Add table to scroll pane
             JScrollPane scrollPane = new JScrollPane(table);
             JLabel titleLabel = new JLabel("Your Borrowed Items:", JLabel.LEFT);
             titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -1487,7 +1367,6 @@ public class LibraryGUI {
             mainPanel.add(titleLabel, BorderLayout.NORTH);
             mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-            // Show the dialog
             JDialog dialog = new JDialog(frame, "Return Media", true);
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             dialog.getContentPane().add(mainPanel);
@@ -1506,7 +1385,6 @@ public class LibraryGUI {
         }
     }
 
-    // Custom cell renderer for the button column
     private static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
@@ -1525,7 +1403,6 @@ public class LibraryGUI {
             return this;
         }
     }
- // Custom cell editor for the Return button column
     private class ButtonEditor extends AbstractCellEditor implements TableCellEditor {
 
         private final JButton button;
@@ -1545,9 +1422,9 @@ public class LibraryGUI {
             button.setFocusPainted(false);
 
             button.addActionListener(e -> {
-                fireEditingStopped();  // must call before using row
+                fireEditingStopped(); 
 
-                if (currentRow < 0) return; // prevent crash
+                if (currentRow < 0) return; 
 
                 String mediaTitle = (String) table.getModel().getValueAt(currentRow, 0);
 
@@ -1589,10 +1466,9 @@ public class LibraryGUI {
             button.setFocusPainted(false);
 
             button.addActionListener(e -> {
-                // Stop editing first, then safely resolve the stored row index.
                 fireEditingStopped();
                 if (currentRow < 0) {
-                    return; // No active row; avoid AIOOB.
+                    return; 
                 }
                 int modelRow = table.convertRowIndexToModel(currentRow);
                 String username = (String) table.getModel().getValueAt(modelRow, 0);
@@ -1605,7 +1481,6 @@ public class LibraryGUI {
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                      boolean isSelected, int row, int column) {
             String status = (String) table.getModel().getValueAt(row, 3);
-            // Disable for admins and any non-unregisterable status
             button.setEnabled("Can Unregister".equals(status));
             currentRow = row;
             return button;
@@ -1659,12 +1534,10 @@ public class LibraryGUI {
 
     private void showManageUsersPanel() {
         try {
-            // Create the main panel
             JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
             mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             mainPanel.setPreferredSize(new Dimension(800, 500));
 
-            // Create search panel
             JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
             JTextField searchField = new JTextField(30);
             JButton searchButton = new JButton("Search");
@@ -1672,12 +1545,11 @@ public class LibraryGUI {
             searchPanel.add(searchField, BorderLayout.CENTER);
             searchPanel.add(searchButton, BorderLayout.EAST);
 
-            // Create table model
             String[] columnNames = {"Username", "Name", "Role", "Status", "Details", "Action"};
             DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
-                    return column == 4 || column == 5; // Details and Action columns
+                    return column == 4 || column == 5; 
                 }
                 @Override
                 public Class<?> getColumnClass(int columnIndex) {
@@ -1699,9 +1571,8 @@ public class LibraryGUI {
 
             JScrollPane scrollPane = new JScrollPane(usersTable);
 
-            // ------------------------- FIXED: define loadUsers ---------------------------
             Runnable loadUsers = () -> {
-                model.setRowCount(0); // clear table
+                model.setRowCount(0); 
 
                 Collection<User> users = environment.getUserRepository().findAll();
 
@@ -1728,7 +1599,6 @@ public class LibraryGUI {
                 }
             };
 
-            // ------------------------- FIXED: define loadAllInto ---------------------------
             Runnable loadAllInto = () -> {
                 model.setRowCount(0);
                 String term = searchField.getText().trim().toLowerCase();
@@ -1762,21 +1632,17 @@ public class LibraryGUI {
                 }
             };
 
-            // Add action listeners
             searchButton.addActionListener(e -> loadAllInto.run());
             searchField.addActionListener(e -> loadAllInto.run());
 
-            // Add components to panel
             mainPanel.add(searchPanel, BorderLayout.NORTH);
             mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-            // Show the dialog
             JDialog dialog = new JDialog(frame, "Manage Users", true);
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             dialog.getContentPane().add(mainPanel);
 
-            loadUsers.run();  // initial load
-
+            loadUsers.run();  
             dialog.pack();
             dialog.setLocationRelativeTo(frame);
             dialog.setVisible(true);
@@ -1801,7 +1667,6 @@ public class LibraryGUI {
      */
     private void unregisterUser(String username) {
         try {
-            // Confirm unregistration
             int confirm = JOptionPane.showConfirmDialog(
                 frame,
                 "Are you sure you want to unregister user: " + username + "?",
@@ -1811,7 +1676,6 @@ public class LibraryGUI {
             );
 
             if (confirm == JOptionPane.YES_OPTION) {
-                // Get the user to unregister
             	Optional<User> userOpt = environment.getUserRepository().findByUsername(username);
 
                     
@@ -1819,10 +1683,8 @@ public class LibraryGUI {
                     throw new LibraryException("User not found: " + username);
                 }
 
-                // Let UserService handle the unregistration with all validations
                 environment.getUserService().unregisterUser(userOpt.get().getId());
                 
-                // Show success message
                 JOptionPane.showMessageDialog(
                     frame,
                     "User '" + username + "' has been unregistered successfully.",
@@ -1830,7 +1692,6 @@ public class LibraryGUI {
                     JOptionPane.INFORMATION_MESSAGE
                 );
                 
-                // Close any open Manage Users dialog before reopening to avoid stacking.
                 for (Window window : Window.getWindows()) {
                     if (window.isShowing() && window instanceof JDialog dialog
                         && "Manage Users".equals(dialog.getTitle())) {
@@ -1838,7 +1699,6 @@ public class LibraryGUI {
                         break;
                     }
                 }
-                // Refresh the user list in a fresh dialog.
                 showManageUsersPanel();
             }
         } catch (Exception ex) {
@@ -2057,12 +1917,10 @@ public class LibraryGUI {
      */
     private void returnMedia(String mediaTitle) {
         try {
-            // Get current user ID
             String currentUserId = environment.getAuthService().getCurrentUser()
                 .orElseThrow(() -> new LibraryException("User not logged in"))
                 .getId();
 
-            // Find the loan for this media title
             LoanRepository loanRepo = environment.getLoanRepository();
             List<Loan> userLoans = loanRepo.findActiveByUser(currentUserId);
             MediaRepository mediaRepo = environment.getMediaRepository();
@@ -2080,11 +1938,9 @@ public class LibraryGUI {
 
             Loan loan = matchingLoan.get();
 
-            // Process return
             BorrowService borrowService = environment.getBorrowService();
             BigDecimal fine = borrowService.returnMedia(loan.getId());
 
-            // Show success message
             String message = "\"" + mediaTitle + "\" returned successfully";
             if (fine.signum() > 0) {
                 message += ".\nA fine of $" + fine + " has been added to your account.";
@@ -2097,7 +1953,6 @@ public class LibraryGUI {
                 JOptionPane.INFORMATION_MESSAGE
             );
 
-            // Close the current dialog and show an updated one
             Window[] windows = Window.getWindows();
             for (Window window : windows) {
                 if (window.isShowing() && window instanceof JDialog) {
@@ -2109,7 +1964,6 @@ public class LibraryGUI {
                 }
             }
 
-            // Show updated list
             showReturnMediaPanel();
 
         } catch (Exception ex) {

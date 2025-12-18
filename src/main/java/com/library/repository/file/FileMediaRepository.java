@@ -1,5 +1,6 @@
 package com.library.repository.file;
 
+import com.library.common.LibraryException;
 import com.library.domain.Book;
 import com.library.domain.CD;
 import com.library.domain.Media;
@@ -79,20 +80,17 @@ public class FileMediaRepository implements MediaRepository {
       String needle = query.toLowerCase();
       List<Media> matches = new ArrayList<>();
       for (Media media : findAll()) {
-          // Search by title for all media types
           if (media.getTitle().toLowerCase().contains(needle)) {
               matches.add(media);
               continue;
           }
           
-          // For books, search by author and ISBN
           if (media.getType() == MediaType.BOOK && media instanceof Book book) {
               if (book.getAuthor().toLowerCase().contains(needle) || 
                   book.getIsbn().toLowerCase().contains(needle)) {
                   matches.add(media);
               }
           } 
-          // For CDs, search by artist
           else if (media.getType() == MediaType.CD && media instanceof CD cd) {
               if (cd.getArtist().toLowerCase().contains(needle)) {
                   matches.add(media);
@@ -109,7 +107,6 @@ public class FileMediaRepository implements MediaRepository {
       List<String> cdLines = new ArrayList<>();
       for (Media media : all) {
         if (media.getType() == MediaType.BOOK && media instanceof Book book) {
-          // id;title;author;isbn;quantity
           String line =
               String.join(
                   ";",
@@ -120,7 +117,6 @@ public class FileMediaRepository implements MediaRepository {
                   String.valueOf(book.getQuantity()));
           bookLines.add(line);
         } else if (media.getType() == MediaType.CD && media instanceof CD cd) {
-          // id;title;artist;quantity
           String line =
               String.join(
                   ";",
@@ -134,9 +130,10 @@ public class FileMediaRepository implements MediaRepository {
       Files.write(booksFile, bookLines, StandardCharsets.UTF_8);
       Files.write(cdsFile, cdLines, StandardCharsets.UTF_8);
     } catch (IOException e) {
-      throw new RuntimeException(
-          "Failed to write media files: " + booksFile + " and " + cdsFile, e);
-    }
+        throw new LibraryException(
+                "Failed to write media files: " + booksFile + " and " + cdsFile, e);
+        }
+
   }
 
   private String escape(String value) {
@@ -178,10 +175,12 @@ public class FileMediaRepository implements MediaRepository {
         book.setQuantity(quantity);
         result.add(book);
       }
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to read books file: " + booksFile, e);
-    }
-    return result;
+    }  catch (IOException e) {
+        throw new LibraryException(
+                "Failed to write media files: " + booksFile + " and " + cdsFile, e);
+        }
+	return result;
+
   }
 
   private List<Media> readCds() {
@@ -216,16 +215,24 @@ public class FileMediaRepository implements MediaRepository {
         result.add(cd);
       }
     } catch (IOException e) {
-      throw new RuntimeException("Failed to read CDs file: " + cdsFile, e);
-    }
-    return result;
+        throw new LibraryException(
+                "Failed to read CDs file: " + cdsFile, e);
+        }
+	return result;
+
   }
 
+
   @Override
-  public void delete(String id) {
-	// TODO Auto-generated method stub
-	
+  public synchronized void delete(String id) {
+      List<Media> all = new ArrayList<>(findAll());
+      boolean removed = all.removeIf(media -> media.getId().equals(id));
+
+      if (removed) {
+          writeAll(all);
+      }
   }
+
 }
 
 

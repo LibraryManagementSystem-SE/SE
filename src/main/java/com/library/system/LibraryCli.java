@@ -15,10 +15,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+import java.util.logging.Logger;
+
 /**
  * Console based presentation layer.
  */
 public class LibraryCli {
+	
+private static final Logger logger =
+            Logger.getLogger(LibraryCli.class.getName());
+
+
   private final AuthService authService;
   private final CatalogService catalogService;
   private final BorrowService borrowService;
@@ -39,7 +46,7 @@ public class LibraryCli {
   }
 
   public void run() {
-    System.out.println("=== Library Management System ===");
+	  logger.info("=== Library Management System ===");
     boolean running = true;
     while (running) {
       showMenu();
@@ -47,16 +54,16 @@ public class LibraryCli {
       try {
         running = handleChoice(choice);
       } catch (LibraryException ex) {
-        System.out.println("Error: " + ex.getMessage());
+    	    logger.warning("Error: " + ex.getMessage());
       } catch (Exception ex) {
-        System.out.println("Unexpected error: " + ex.getMessage());
+    	    logger.severe("Unexpected error: " + ex.getMessage());
       }
     }
-    System.out.println("Goodbye!");
+    logger.info("Goodbye!");
   }
 
   private void showMenu() {
-    System.out.println("\n=== Library Management System ===");
+	  logger.info("=== Library Management System ===");
     Optional<User> currentUser = authService.getCurrentUser();
     
     if (currentUser.isEmpty()) {
@@ -69,37 +76,40 @@ public class LibraryCli {
   }
 
   private void showInitialMenu() {
-    System.out.println("\n=== Library Management System ===");
-    System.out.println("1. Login");
-    System.out.println("2. Register member");
-    System.out.println("3. Search media");
-    System.out.println("0. Exit");
-    System.out.print("> ");
+	  logger.info("\n=== Library Management System ===");
+	  logger.info("1. Login");
+	  logger.info("2. Register member");
+	  logger.info("3. Search media");
+	  logger.info("0. Exit");
+	  System.out.print("> "); 
+
   }
 
   private void showMemberMenu() {
     User currentUser = authService.getCurrentUser().orElseThrow();
-    System.out.printf("\nWelcome %s (Member)\n", currentUser.getName());
-    System.out.println("1. Borrow media");
-    System.out.println("2. Return media");
-    System.out.println("3. Pay fine");
-    System.out.println("4. Search media");
-    System.out.println("0. Logout");
+    logger.info(String.format("\nWelcome %s (Member)", currentUser.getName()));
+    logger.info("1. Borrow media");
+    logger.info("2. Return media");
+    logger.info("3. Pay fine");
+    logger.info("4. Search media");
+    logger.info("0. Logout");
     System.out.print("> ");
+
   }
 
   private void showAdminMenu() {
     User currentUser = authService.getCurrentUser().orElseThrow();
-    System.out.println("\n=== Library Management System ===");
-    System.out.printf("Welcome, %s (Admin)\n\n", currentUser.getName());
-    System.out.println("1. Add book");
-    System.out.println("2. Add CD");
-    System.out.println("3. Send reminders");
-    System.out.println("4. Show overdue report");
-    System.out.println("5. List all users");
-    System.out.println("6. Unregister user");
-    System.out.println("0. Logout");
+    logger.info("\n=== Library Management System ===");
+    logger.info(String.format("Welcome, %s (Admin)", currentUser.getName()));
+    logger.info("1. Add book");
+    logger.info("2. Add CD");
+    logger.info("3. Send reminders");
+    logger.info("4. Show overdue report");
+    logger.info("5. List all users");
+    logger.info("6. Unregister user");
+    logger.info("0. Logout");
     System.out.print("> ");
+
   }
 
   private boolean handleChoice(String choice) {
@@ -120,7 +130,8 @@ public class LibraryCli {
       case "2" -> { registerMember(); yield true; }
       case "3" -> { search(); yield true; }
       case "0" -> { System.out.println("Goodbye!"); yield false; }
-      default -> { System.out.println("Invalid option, please try again"); yield true; }
+      default -> { logger.warning("Invalid option, please try again");
+ yield true; }
     };
   }
 
@@ -132,10 +143,10 @@ public class LibraryCli {
       case "4" -> { search(); yield true; }
       case "0" -> { 
         authService.logout();
-        System.out.println("Successfully logged out");
+        logger.info("Successfully logged out");
         yield true; 
       }
-      default -> { System.out.println("خيار غير صالح، الرجاء المحاولة مرة أخرى"); yield true; }
+      default -> { System.out.println("Invalid option, please try again."); yield true; }
     };
   }
 
@@ -149,10 +160,10 @@ public class LibraryCli {
       case "6" -> { unregister(); yield true; }
       case "0" -> { 
         authService.logout();
-        System.out.println("Successfully logged out");
+        logger.info("Successfully logged out");
         yield true; 
       }
-      default -> { System.out.println("خيار غير صالح، الرجاء المحاولة مرة أخرى"); yield true; }
+      default -> { System.out.println("Invalid option, please try again."); yield true; }
     };
   }
 
@@ -173,7 +184,7 @@ public class LibraryCli {
     System.out.print("Password: ");
     String password = scanner.nextLine().trim();
     User member = userService.registerMember(username, name, password);
-    System.out.println("Member created with id " + member.getId());
+    logger.info("Member created with id " + member.getId());
   }
 
   private void addBook() {
